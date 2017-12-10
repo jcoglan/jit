@@ -1,4 +1,8 @@
+require_relative "./lockfile"
+
 class Refs
+  LockDenied = Class.new(StandardError)
+
   def initialize(pathname)
     @pathname = pathname
   end
@@ -10,8 +14,15 @@ class Refs
   end
 
   def update_head(oid)
-    flags = File::WRONLY | File::CREAT
-    File.open(head_path, flags) { |file| file.puts(oid) }
+    lockfile = Lockfile.new(head_path)
+
+    unless lockfile.hold_for_update
+      raise LockDenied, "Could not acquire lock on file: #{ head_path }"
+    end
+
+    lockfile.write(oid)
+    lockfile.write("\n")
+    lockfile.commit
   end
 
   private
