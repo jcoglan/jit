@@ -24,8 +24,10 @@ class Database
 
   def write_object(oid, content)
     object_path = @pathname.join(oid[0..1], oid[2..-1])
-    dirname     = object_path.dirname
-    temp_path   = dirname.join(generate_temp_name)
+    return if File.exist?(object_path)
+
+    dirname   = object_path.dirname
+    temp_path = dirname.join(generate_temp_name)
 
     begin
       flags = File::RDWR | File::CREAT | File::EXCL
