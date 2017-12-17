@@ -3,11 +3,11 @@
 require "fileutils"
 require "pathname"
 
-require_relative "./author"
-require_relative "./database"
-require_relative "./entry"
-require_relative "./refs"
-require_relative "./workspace"
+require_relative "../author"
+require_relative "../database"
+require_relative "../entry"
+require_relative "../refs"
+require_relative "../workspace"
 
 command = ARGV.shift
 
@@ -49,8 +49,8 @@ when "commit"
     Entry.new(path, blob.oid, stat)
   end
 
-  tree = Tree.new(entries)
-  database.store(tree)
+  root = Tree.build(entries)
+  root.traverse { |tree| database.store(tree) }
 
   parent  = refs.read_head
   name    = ENV.fetch("GIT_AUTHOR_NAME")
@@ -59,7 +59,7 @@ when "commit"
   author  = Author.new(name, email, time)
   message = $stdin.read
 
-  commit = Commit.new(parent, tree.oid, author, message)
+  commit = Commit.new(parent, root.oid, author, message)
   database.store(commit)
   refs.update_head(commit.oid)
 
