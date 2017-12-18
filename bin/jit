@@ -3,11 +3,10 @@
 require "fileutils"
 require "pathname"
 
-require_relative "../author"
-require_relative "../database"
-require_relative "../entry"
-require_relative "../refs"
-require_relative "../workspace"
+require_relative "../lib/database"
+require_relative "../lib/entry"
+require_relative "../lib/refs"
+require_relative "../lib/workspace"
 
 command = ARGV.shift
 
@@ -41,7 +40,7 @@ when "commit"
 
   entries = workspace.list_files.map do |path|
     data = workspace.read_file(path)
-    blob = Blob.new(data)
+    blob = Database::Blob.new(data)
 
     database.store(blob)
 
@@ -49,7 +48,7 @@ when "commit"
     Entry.new(path, blob.oid, stat)
   end
 
-  root = Tree.build(entries)
+  root = Database::Tree.build(entries)
   root.traverse { |tree| database.store(tree) }
 
   parent  = refs.read_head
@@ -58,7 +57,7 @@ when "commit"
   author  = Author.new(name, email, Time.now)
   message = $stdin.read
 
-  commit = Commit.new(parent, root.oid, author, message)
+  commit = Database::Commit.new(parent, root.oid, author, message)
   database.store(commit)
   refs.update_head(commit.oid)
 
