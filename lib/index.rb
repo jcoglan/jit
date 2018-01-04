@@ -1,4 +1,5 @@
 require "digest/sha1"
+require "set"
 
 require_relative "./index/entry"
 require_relative "./lockfile"
@@ -8,6 +9,7 @@ class Index
 
   def initialize(pathname)
     @entries  = {}
+    @keys     = SortedSet.new
     @lockfile = Lockfile.new(pathname)
   end
 
@@ -17,7 +19,7 @@ class Index
     begin_write
     header = ["DIRC", 2, @entries.size].pack(HEADER_FORMAT)
     write(header)
-    @entries.each { |key, entry| write(entry.to_s) }
+    each_entry { |entry| write(entry.to_s) }
     finish_write
 
     true
@@ -25,7 +27,12 @@ class Index
 
   def add(pathname, oid, stat)
     entry = Entry.create(pathname, oid, stat)
-    @entries[pathname.to_s] = entry
+    @keys.add(entry.key)
+    @entries[entry.key] = entry
+  end
+
+  def each_entry
+    @keys.each { |key| yield @entries[key] }
   end
 
   private
