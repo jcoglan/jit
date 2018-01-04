@@ -5,17 +5,12 @@ class Workspace
     @pathname = pathname
   end
 
-  def list_files(dir = @pathname)
-    filenames = Dir.entries(dir) - IGNORE
-
-    filenames.flat_map do |name|
-      path = dir.join(name)
-
-      if File.directory?(path)
-        list_files(path)
-      else
-        path.relative_path_from(@pathname)
-      end
+  def list_files(path = @pathname)
+    if File.directory?(path)
+      filenames = Dir.entries(path) - IGNORE
+      filenames.flat_map { |name| list_files(path.join(name)) }
+    else
+      [path.relative_path_from(@pathname)]
     end
   end
 
