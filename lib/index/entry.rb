@@ -25,6 +25,10 @@ class Index
         oid, flags, pathname.to_s)
     end
 
+    def key
+      path
+    end
+
     def to_s
       string = to_a.pack(ENTRY_FORMAT)
       string << "\0" until string.bytesize % ENTRY_BLOCK == 0
