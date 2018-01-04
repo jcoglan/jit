@@ -39,13 +39,16 @@ when "add"
   index     = Index.new(git_path.join("index"))
 
   ARGV.each do |path|
-    path = Pathname.new(path)
-    data = workspace.read_file(path)
-    stat = workspace.stat_file(path)
+    path = Pathname.new(File.expand_path(path))
 
-    blob = Database::Blob.new(data)
-    database.store(blob)
-    index.add(path, blob.oid, stat)
+    workspace.list_files(path).each do |pathname|
+      data = workspace.read_file(pathname)
+      stat = workspace.stat_file(pathname)
+
+      blob = Database::Blob.new(data)
+      database.store(blob)
+      index.add(pathname, blob.oid, stat)
+    end
   end
 
   index.write_updates
