@@ -1,6 +1,7 @@
 class Index
-  ENTRY_FORMAT = "N10H40nZ*"
-  ENTRY_BLOCK  = 8
+  ENTRY_FORMAT   = "N10H40nZ*"
+  ENTRY_BLOCK    = 8
+  ENTRY_MIN_SIZE = 64
 
   REGULAR_MODE    = 0100644
   EXECUTABLE_MODE = 0100755
@@ -24,6 +25,10 @@ class Index
         stat.mtime.to_i, stat.mtime.nsec,
         stat.dev, stat.ino, mode, stat.uid, stat.gid, stat.size,
         oid, flags, path)
+    end
+
+    def self.parse(data)
+      Entry.new(*data.unpack(ENTRY_FORMAT))
     end
 
     def key
