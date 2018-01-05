@@ -38,6 +38,8 @@ when "add"
   database  = Database.new(git_path.join("objects"))
   index     = Index.new(git_path.join("index"))
 
+  index.load_for_update
+
   ARGV.each do |path|
     path = Pathname.new(File.expand_path(path))
 

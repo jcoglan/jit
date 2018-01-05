@@ -1,53 +1,113 @@
-require "digest/sha1"
 require "set"
 
+require_relative "./index/checksum"
 require_relative "./index/entry"
 require_relative "./lockfile"
 
 class Index
+  Invalid = Class.new(StandardError)
+
+  HEADER_SIZE   = 12
   HEADER_FORMAT = "a4N2"
+  SIGNATURE     = "DIRC"
+  VERSION       = 2
 
   def initialize(pathname)
-    @entries  = {}
-    @keys     = SortedSet.new
+    @pathname = pathname
     @lockfile = Lockfile.new(pathname)
+    clear
   end
 
   def add(pathname, oid, stat)
     entry = Entry.create(pathname, oid, stat)
-    @keys.add(entry.key)
-    @entries[entry.key] = entry
+    store_entry(entry)
+    @changed = true
   end
 
   def each_entry
     @keys.each { |key| yield @entries[key] }
   end
 
+  def load_for_update
+    if @lockfile.hold_for_update
+      load
+      true
+    else
+      false
+    end
+  end
+
+  def load
+    clear
+    file = open_index_file
+
+    if file
+      reader = Checksum.new(file)
+      count = read_header(reader)
+      read_entries(reader, count)
+      reader.verify_checksum
+    end
+  ensure
+    file.close if file
+  end
+
   def write_updates
-    return false unless @lockfile.hold_for_update
+    return @lockfile.rollback unless @changed
 
-    begin_write
-    header = ["DIRC", 2, @entries.size].pack(HEADER_FORMAT)
-    write(header)
-    each_entry { |entry| write(entry.to_s) }
-    finish_write
+    writer = Checksum.new(@lockfile)
 
-    true
+    header = [SIGNATURE, VERSION, @entries.size].pack(HEADER_FORMAT)
+    writer.write(header)
+    each_entry { |entry| writer.write(entry.to_s) }
+
+    writer.write_checksum
+    @lockfile.commit
+
+    @changed = false
   end
 
   private
 
-  def begin_write
-    @digest = Digest::SHA1.new
+  def clear
+    @entries = {}
+    @keys    = SortedSet.new
+    @changed = false
   end
 
-  def write(data)
-    @lockfile.write(data)
-    @digest.update(data)
+  def store_entry(entry)
+    @keys.add(entry.key)
+    @entries[entry.key] = entry
   end
 
-  def finish_write
-    @lockfile.write(@digest.digest)
-    @lockfile.commit
+  def open_index_file
+    File.open(@pathname, File::RDONLY)
+  rescue Errno::ENOENT
+    nil
+  end
+
+  def read_header(reader)
+    data = reader.read(HEADER_SIZE)
+    signature, version, count = data.unpack(HEADER_FORMAT)
+
+    unless signature == SIGNATURE
+      raise Invalid, "Signature: expected '#{ SIGNATURE }' but found '#{ signature }'"
+    end
+    unless version == VERSION
+      raise Invalid, "Version: expected '#{ VERSION }' but found '#{ version }'"
+    end
+
+    count
+  end
+
+  def read_entries(reader, count)
+    count.times do |n|
+      entry = reader.read(ENTRY_MIN_SIZE)
+
+      until entry.byteslice(-1) == "\0"
+        entry << reader.read(ENTRY_BLOCK)
+      end
+
+      store_entry(Entry.parse(entry))
+    end
   end
 end
