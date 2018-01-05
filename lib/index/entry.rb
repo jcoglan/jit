@@ -1,3 +1,5 @@
+require "pathname"
+
 class Index
   ENTRY_FORMAT   = "N10H40nZ*"
   ENTRY_BLOCK    = 8
@@ -32,6 +34,14 @@ class Index
 
     def key
       path
+    end
+
+    def parent_directories
+      Pathname.new(path).descend.to_a[0..-2]
+    end
+
+    def basename
+      Pathname.new(path).basename
     end
 
     def to_s

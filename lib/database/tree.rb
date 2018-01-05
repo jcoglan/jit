@@ -6,13 +6,10 @@ class Database
     attr_accessor :oid
 
     def self.build(entries)
-      entries = entries.sort_by { |entry| entry.name.to_s }
-      root    = Tree.new
+      root = Tree.new
 
       entries.each do |entry|
-        path = entry.name.each_filename.to_a
-        name = path.pop
-        root.add_entry(path, name, entry)
+        root.add_entry(entry.parent_directories, entry)
       end
 
       root
@@ -22,12 +19,12 @@ class Database
       @entries = {}
     end
 
-    def add_entry(path, name, entry)
-      if path.empty?
-        @entries[name] = entry
+    def add_entry(parents, entry)
+      if parents.empty?
+        @entries[entry.basename] = entry
       else
-        tree = @entries[path.first] ||= Tree.new
-        tree.add_entry(path.drop(1), name, entry)
+        tree = @entries[parents.first.basename] ||= Tree.new
+        tree.add_entry(parents.drop(1), entry)
       end
     end
 
@@ -39,7 +36,7 @@ class Database
     end
 
     def mode
-      Entry::DIRECTORY_MODE
+      040000
     end
 
     def type
@@ -48,7 +45,8 @@ class Database
 
     def to_s
       entries = @entries.map do |name, entry|
-        ["#{ entry.mode } #{ name }", entry.oid].pack(ENTRY_FORMAT)
+        mode = entry.mode.to_s(8)
+        ["#{ mode } #{ name }", entry.oid].pack(ENTRY_FORMAT)
       end
 
       entries.join("")
