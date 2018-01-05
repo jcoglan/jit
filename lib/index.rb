@@ -63,7 +63,11 @@ class Index
   end
 
   def each_entry
-    @keys.each { |key| yield @entries[key] }
+    if block_given?
+      @keys.each { |key| yield @entries[key] }
+    else
+      enum_for(:each_entry)
+    end
   end
 
   private
