@@ -4,7 +4,6 @@ require "fileutils"
 require "pathname"
 
 require_relative "../lib/database"
-require_relative "../lib/entry"
 require_relative "../lib/index"
 require_relative "../lib/refs"
 require_relative "../lib/workspace"
@@ -59,23 +58,14 @@ when "add"
 when "commit"
   root_path = Pathname.new(Dir.getwd)
   git_path  = root_path.join(".git")
-  db_path   = git_path.join("objects")
 
-  workspace = Workspace.new(root_path)
-  database  = Database.new(db_path)
-  refs      = Refs.new(git_path)
+  database = Database.new(git_path.join("objects"))
+  index    = Index.new(git_path.join("index"))
+  refs     = Refs.new(git_path)
 
-  entries = workspace.list_files.map do |path|
-    data = workspace.read_file(path)
-    blob = Database::Blob.new(data)
+  index.load
 
-    database.store(blob)
-
-    stat = workspace.stat_file(path)
-    Entry.new(path, blob.oid, stat)
-  end
-
-  root = Database::Tree.build(entries)
+  root = Database::Tree.build(index.each_entry)
   root.traverse { |tree| database.store(tree) }
 
   parent  = refs.read_head
