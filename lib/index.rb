@@ -44,16 +44,13 @@ class Index
 
   def load
     clear
-    file = open_index_file
 
-    if file
+    open_index_file do |file|
       reader = Checksum.new(file)
       count = read_header(reader)
       read_entries(reader, count)
       reader.verify_checksum
     end
-  ensure
-    file.close if file
   end
 
   def write_updates
@@ -91,8 +88,8 @@ class Index
     @entries[entry.key] = entry
   end
 
-  def open_index_file
-    File.open(@pathname, File::RDONLY)
+  def open_index_file(&block)
+    File.open(@pathname, File::RDONLY, &block)
   rescue Errno::ENOENT
     nil
   end
