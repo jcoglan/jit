@@ -76,19 +76,38 @@ class Index
   def clear
     @entries = {}
     @keys    = SortedSet.new
+    @parents = Hash.new { |hash, key| hash[key] = Set.new }
     @changed = false
   end
 
   def discard_conflicts(entry)
+    entry.parent_directories.each { |parent| remove_entry(parent) }
+
+    set = @parents.fetch(entry.path, [])
+    set.each { |child| remove_entry(child) }
+  end
+
+  def remove_entry(pathname)
+    entry = @entries[pathname.to_s]
+    return unless entry
+
+    @keys.delete(entry.key)
+    @entries.delete(entry.key)
+
     entry.parent_directories.each do |dirname|
-      @keys.delete(dirname.to_s)
-      @entries.delete(dirname.to_s)
+      dir = dirname.to_s
+      @parents[dir].delete(entry.path)
+      @parents.delete(dir) if @parents[dir].empty?
     end
   end
 
   def store_entry(entry)
     @keys.add(entry.key)
     @entries[entry.key] = entry
+
+    entry.parent_directories.each do |dirname|
+      @parents[dirname.to_s].add(entry.path)
+    end
   end
 
   def open_index_file
