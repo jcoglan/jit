@@ -19,12 +19,8 @@ class Index
   end
 
   def load_for_update
-    if @lockfile.hold_for_update
-      load
-      true
-    else
-      false
-    end
+    @lockfile.hold_for_update
+    load
   end
 
   def load

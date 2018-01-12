@@ -37,7 +37,19 @@ when "add"
   database  = Database.new(git_path.join("objects"))
   index     = Index.new(git_path.join("index"))
 
-  index.load_for_update
+  begin
+    index.load_for_update
+  rescue Lockfile::LockDenied => error
+    $stderr.puts <<~ERROR
+      fatal: #{ error.message }
+
+      Another jit process seems to be running in this repository.
+      Please make sure all processes are terminated then try again.
+      If it still fails, a jit process may have crashed in this
+      repository earlier: remove the file manually to continue.
+    ERROR
+    exit 128
+  end
 
   begin
     paths = ARGV.flat_map do |path|
