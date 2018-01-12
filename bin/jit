@@ -39,17 +39,31 @@ when "add"
 
   index.load_for_update
 
-  ARGV.each do |path|
-    path = Pathname.new(File.expand_path(path))
+  begin
+    paths = ARGV.flat_map do |path|
+      path = Pathname.new(File.expand_path(path))
+      workspace.list_files(path)
+    end
+  rescue Workspace::MissingFile => error
+    $stderr.puts "fatal: #{ error.message }"
+    index.release_lock
+    exit 128
+  end
 
-    workspace.list_files(path).each do |pathname|
-      data = workspace.read_file(pathname)
-      stat = workspace.stat_file(pathname)
+  begin
+    paths.each do |path|
+      data = workspace.read_file(path)
+      stat = workspace.stat_file(path)
 
       blob = Database::Blob.new(data)
       database.store(blob)
-      index.add(pathname, blob.oid, stat)
+      index.add(path, blob.oid, stat)
     end
+  rescue Workspace::NoPermission => error
+    $stderr.puts "error: #{ error.message }"
+    $stderr.puts "fatal: adding files failed"
+    index.release_lock
+    exit 128
   end
 
   index.write_updates

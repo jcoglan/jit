@@ -56,6 +56,10 @@ class Index
     @changed = false
   end
 
+  def release_lock
+    @lockfile.rollback
+  end
+
   def add(pathname, oid, stat)
     entry = Entry.create(pathname, oid, stat)
     discard_conflicts(entry)
