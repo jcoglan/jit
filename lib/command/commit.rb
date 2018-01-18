@@ -1,11 +1,13 @@
 require "pathname"
+
+require_relative "./base"
 require_relative "../repository"
 
 module Command
-  class Commit
+  class Commit < Base
 
     def run
-      root_path = Pathname.new(Dir.getwd)
+      root_path = Pathname.new(@dir)
       repo = Repository.new(root_path.join(".git"))
 
       repo.index.load
@@ -14,10 +16,10 @@ module Command
       root.traverse { |tree| repo.database.store(tree) }
 
       parent  = repo.refs.read_head
-      name    = ENV.fetch("GIT_AUTHOR_NAME")
-      email   = ENV.fetch("GIT_AUTHOR_EMAIL")
+      name    = @env.fetch("GIT_AUTHOR_NAME")
+      email   = @env.fetch("GIT_AUTHOR_EMAIL")
       author  = Database::Author.new(name, email, Time.now)
-      message = $stdin.read
+      message = @stdin.read
 
       commit = Database::Commit.new(parent, root.oid, author, message)
       repo.database.store(commit)

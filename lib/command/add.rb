@@ -1,17 +1,19 @@
 require "pathname"
+
+require_relative "./base"
 require_relative "../repository"
 
 module Command
-  class Add
+  class Add < Base
 
     def run
-      root_path = Pathname.new(Dir.getwd)
+      root_path = Pathname.new(@dir)
       repo = Repository.new(root_path.join(".git"))
 
       begin
         repo.index.load_for_update
       rescue Lockfile::LockDenied => error
-        $stderr.puts <<~ERROR
+        @stderr.puts <<~ERROR
           fatal: #{ error.message }
 
           Another jit process seems to be running in this repository.
@@ -23,12 +25,12 @@ module Command
       end
 
       begin
-        paths = ARGV.flat_map do |path|
-          path = Pathname.new(File.expand_path(path))
+        paths = @args.flat_map do |path|
+          path = expanded_pathname(path)
           repo.workspace.list_files(path)
         end
       rescue Workspace::MissingFile => error
-        $stderr.puts "fatal: #{ error.message }"
+        @stderr.puts "fatal: #{ error.message }"
         repo.index.release_lock
         exit 128
       end
@@ -43,8 +45,8 @@ module Command
           repo.index.add(path, blob.oid, stat)
         end
       rescue Workspace::NoPermission => error
-        $stderr.puts "error: #{ error.message }"
-        $stderr.puts "fatal: adding files failed"
+        @stderr.puts "error: #{ error.message }"
+        @stderr.puts "fatal: adding files failed"
         repo.index.release_lock
         exit 128
       end
