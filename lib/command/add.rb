@@ -1,15 +1,10 @@
 require "pathname"
-
 require_relative "./base"
-require_relative "../repository"
 
 module Command
   class Add < Base
 
     def run
-      root_path = Pathname.new(@dir)
-      repo = Repository.new(root_path.join(".git"))
-
       begin
         repo.index.load_for_update
       rescue Lockfile::LockDenied => error

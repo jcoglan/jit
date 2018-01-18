@@ -1,15 +1,10 @@
 require "pathname"
-
 require_relative "./base"
-require_relative "../repository"
 
 module Command
   class Commit < Base
 
     def run
-      root_path = Pathname.new(@dir)
-      repo = Repository.new(root_path.join(".git"))
-
       repo.index.load
 
       root = Database::Tree.build(repo.index.each_entry)
