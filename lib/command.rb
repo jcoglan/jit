@@ -11,12 +11,18 @@ module Command
     "commit" => Commit
   }
 
-  def self.execute(name)
+  def self.execute(dir, env, argv, stdin, stdout, stderr)
+    name = argv.first
+    args = argv.drop(1)
+
     unless COMMANDS.has_key?(name)
       raise Unknown, "'#{ name }' is not a jit command."
     end
 
     command_class = COMMANDS[name]
-    command_class.new.run
+    command = command_class.new(dir, env, args, stdin, stdout, stderr)
+
+    command.execute
+    command
   end
 end
