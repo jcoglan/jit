@@ -63,6 +63,11 @@ class Index
     @changed = true
   end
 
+  def update_entry_stat(entry, stat)
+    entry.update_stat(stat)
+    @changed = true
+  end
+
   def each_entry
     if block_given?
       @keys.each { |key| yield @entries[key] }

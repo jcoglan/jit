@@ -26,6 +26,10 @@ module CommandHelper
     File.open(path, flags) { |file| file.write(contents) }
   end
 
+  def touch(name)
+    FileUtils.touch(repo_path.join(name))
+  end
+
   def make_executable(name)
     File.chmod(0755, repo_path.join(name))
   end

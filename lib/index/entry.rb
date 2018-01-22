@@ -49,8 +49,26 @@ class Index
       Pathname.new(path).basename
     end
 
+    def update_stat(stat)
+      self.ctime      = stat.ctime.to_i
+      self.ctime_nsec = stat.ctime.nsec
+      self.mtime      = stat.mtime.to_i
+      self.mtime_nsec = stat.mtime.nsec
+      self.dev        = stat.dev
+      self.ino        = stat.ino
+      self.mode       = Entry.mode_for_stat(stat)
+      self.uid        = stat.uid
+      self.gid        = stat.gid
+      self.size       = stat.size
+    end
+
     def stat_match?(stat)
       mode == Entry.mode_for_stat(stat) and (size == 0 or size == stat.size)
+    end
+
+    def times_match?(stat)
+      ctime == stat.ctime.to_i and ctime_nsec == stat.ctime.nsec and
+      mtime == stat.mtime.to_i and mtime_nsec == stat.mtime.nsec
     end
 
     def to_s
