@@ -7,10 +7,14 @@ module Command
     def run
       repo.index.load
 
+      @stats     = {}
+      @changed   = SortedSet.new
       @untracked = SortedSet.new
 
       scan_workspace
+      detect_workspace_changes
 
+      @changed.each   { |path| puts " M #{ path }" }
       @untracked.each { |path| puts "?? #{ path }" }
 
       exit 0
@@ -21,6 +25,7 @@ module Command
     def scan_workspace(prefix = nil)
       repo.workspace.list_dir(prefix).each do |path, stat|
         if repo.index.tracked?(path)
+          @stats[path] = stat if stat.file?
           scan_workspace(path) if stat.directory?
         elsif trackable_file?(path, stat)
           path += File::SEPARATOR if stat.directory?
@@ -42,6 +47,15 @@ module Command
       [files, dirs].any? do |list|
         list.any? { |item_path, item_stat| trackable_file?(item_path, item_stat) }
       end
+    end
+
+    def detect_workspace_changes
+      repo.index.each_entry { |entry| check_index_entry(entry) }
+    end
+
+    def check_index_entry(entry)
+      stat = @stats[entry.path]
+      @changed.add(entry.path) unless entry.stat_match?(stat)
     end
 
   end

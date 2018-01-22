@@ -68,4 +68,29 @@ describe Command::Status do
       ?? outer/
     STATUS
   end
+
+  describe "index/workspace changes" do
+    before do
+      write_file "1.txt", "one"
+      write_file "a/2.txt", "two"
+      write_file "a/b/3.txt", "three"
+
+      jit_cmd "add", "."
+      commit "commit message"
+    end
+
+    it "prints nothing when no files are changed" do
+      assert_status ""
+    end
+
+    it "reports files with modified contents" do
+      write_file "1.txt", "changed"
+      write_file "a/2.txt", "modified"
+
+      assert_status <<~STATUS
+        \ M 1.txt
+        \ M a/2.txt
+      STATUS
+    end
+  end
 end
