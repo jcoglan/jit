@@ -34,6 +34,10 @@ module CommandHelper
     File.chmod(0200, repo_path.join(name))
   end
 
+  def mkdir(name)
+    FileUtils.mkdir_p(repo_path.join(name))
+  end
+
   def set_env(key, value)
     @env ||= {}
     @env[key] = value
