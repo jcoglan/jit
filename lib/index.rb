@@ -71,6 +71,10 @@ class Index
     end
   end
 
+  def tracked?(path)
+    @entries.has_key?(path.to_s)
+  end
+
   private
 
   def clear
