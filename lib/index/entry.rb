@@ -19,7 +19,7 @@ class Index
   Entry = Struct.new(*entry_fields) do
     def self.create(pathname, oid, stat)
       path  = pathname.to_s
-      mode  = stat.executable? ? EXECUTABLE_MODE : REGULAR_MODE
+      mode  = Entry.mode_for_stat(stat)
       flags = [path.bytesize, MAX_PATH_SIZE].min
 
       Entry.new(
@@ -27,6 +27,10 @@ class Index
         stat.mtime.to_i, stat.mtime.nsec,
         stat.dev, stat.ino, mode, stat.uid, stat.gid, stat.size,
         oid, flags, path)
+    end
+
+    def self.mode_for_stat(stat)
+      stat.executable? ? EXECUTABLE_MODE : REGULAR_MODE
     end
 
     def self.parse(data)
@@ -46,7 +50,7 @@ class Index
     end
 
     def stat_match?(stat)
-      size == 0 or size == stat.size
+      mode == Entry.mode_for_stat(stat) and (size == 0 or size == stat.size)
     end
 
     def to_s
