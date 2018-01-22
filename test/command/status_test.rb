@@ -92,5 +92,13 @@ describe Command::Status do
         \ M a/2.txt
       STATUS
     end
+
+    it "reports files with changed modes" do
+      make_executable "a/2.txt"
+
+      assert_status <<~STATUS
+        \ M a/2.txt
+      STATUS
+    end
   end
 end
