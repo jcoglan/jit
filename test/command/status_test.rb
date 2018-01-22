@@ -30,4 +30,28 @@ describe Command::Status do
       ?? file.txt
     STATUS
   end
+
+  it "lists untracked directories, not their contents" do
+    write_file "file.txt", ""
+    write_file "dir/another.txt", ""
+
+    assert_status <<~STATUS
+      ?? dir/
+      ?? file.txt
+    STATUS
+  end
+
+  it "lists untracked files inside tracked directories" do
+    write_file "a/b/inner.txt", ""
+    jit_cmd "add", "."
+    commit "commit message"
+
+    write_file "a/outer.txt", ""
+    write_file "a/b/c/file.txt", ""
+
+    assert_status <<~STATUS
+      ?? a/b/c/
+      ?? a/outer.txt
+    STATUS
+  end
 end

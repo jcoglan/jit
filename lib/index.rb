@@ -72,7 +72,7 @@ class Index
   end
 
   def tracked?(path)
-    @entries.has_key?(path.to_s)
+    @entries.has_key?(path.to_s) or @parents.has_key?(path.to_s)
   end
 
   private
