@@ -114,5 +114,22 @@ describe Command::Status do
 
       assert_status ""
     end
+
+    it "reports deleted files" do
+      delete "a/2.txt"
+
+      assert_status <<~STATUS
+        \ D a/2.txt
+      STATUS
+    end
+
+    it "reports files in deleted directories" do
+      delete "a"
+
+      assert_status <<~STATUS
+        \ D a/2.txt
+        \ D a/b/3.txt
+      STATUS
+    end
   end
 end
