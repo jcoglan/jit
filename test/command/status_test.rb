@@ -108,5 +108,11 @@ describe Command::Status do
         \ M a/2.txt
       STATUS
     end
+
+    it "prints nothing if a file is touched" do
+      touch "1.txt"
+
+      assert_status ""
+    end
   end
 end

@@ -5,14 +5,16 @@ module Command
   class Status < Base
 
     def run
-      repo.index.load
-
       @stats     = {}
       @changed   = SortedSet.new
       @untracked = SortedSet.new
 
+      repo.index.load_for_update
+
       scan_workspace
       detect_workspace_changes
+
+      repo.index.write_updates
 
       @changed.each   { |path| puts " M #{ path }" }
       @untracked.each { |path| puts "?? #{ path }" }
@@ -55,13 +57,19 @@ module Command
 
     def check_index_entry(entry)
       stat = @stats[entry.path]
+
       return @changed.add(entry.path) unless entry.stat_match?(stat)
+      return if entry.times_match?(stat)
 
       data = repo.workspace.read_file(entry.path)
       blob = Database::Blob.new(data)
       oid  = repo.database.hash_object(blob)
 
-      @changed.add(entry.path) unless entry.oid == oid
+      if entry.oid == oid
+        repo.index.update_entry_stat(entry, stat)
+      else
+        @changed.add(entry.path)
+      end
     end
 
   end
