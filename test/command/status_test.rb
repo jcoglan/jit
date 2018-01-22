@@ -93,6 +93,14 @@ describe Command::Status do
       STATUS
     end
 
+    it "reports modified files with unchanged size" do
+      write_file "a/b/3.txt", "hello"
+
+      assert_status <<~STATUS
+        \ M a/b/3.txt
+      STATUS
+    end
+
     it "reports files with changed modes" do
       make_executable "a/2.txt"
 

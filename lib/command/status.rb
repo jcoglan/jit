@@ -55,7 +55,13 @@ module Command
 
     def check_index_entry(entry)
       stat = @stats[entry.path]
-      @changed.add(entry.path) unless entry.stat_match?(stat)
+      return @changed.add(entry.path) unless entry.stat_match?(stat)
+
+      data = repo.workspace.read_file(entry.path)
+      blob = Database::Blob.new(data)
+      oid  = repo.database.hash_object(blob)
+
+      @changed.add(entry.path) unless entry.oid == oid
     end
 
   end
