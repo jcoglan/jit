@@ -5,6 +5,23 @@ class Database
     TREE_MODE    = 040000
 
     attr_accessor :oid
+    attr_reader :entries
+
+    def self.parse(scanner)
+      entries = {}
+
+      until scanner.eos?
+        mode = scanner.scan_until(/ /).strip.to_i(8)
+        name = scanner.scan_until(/\0/)[0..-2]
+
+        oid = scanner.peek(20).unpack("H40").first
+        scanner.pos += 20
+
+        entries[name] = Entry.new(oid, mode)
+      end
+
+      Tree.new(entries)
+    end
 
     def self.build(entries)
       root = Tree.new
@@ -16,8 +33,8 @@ class Database
       root
     end
 
-    def initialize
-      @entries = {}
+    def initialize(entries = {})
+      @entries = entries
     end
 
     def add_entry(parents, entry)
