@@ -1,16 +1,25 @@
 require "digest/sha1"
+require "strscan"
 require "zlib"
 
 require_relative "./database/author"
 require_relative "./database/blob"
 require_relative "./database/commit"
+require_relative "./database/entry"
 require_relative "./database/tree"
 
 class Database
   TEMP_CHARS = ("a".."z").to_a + ("A".."Z").to_a + ("0".."9").to_a
 
+  TYPES = {
+    "blob"   => Blob,
+    "tree"   => Tree,
+    "commit" => Commit
+  }
+
   def initialize(pathname)
     @pathname = pathname
+    @objects  = {}
   end
 
   def store(object)
@@ -24,6 +33,10 @@ class Database
     hash_content(serialize_object(object))
   end
 
+  def load(oid)
+    @objects[oid] ||= read_object(oid)
+  end
+
   private
 
   def serialize_object(object)
@@ -35,11 +48,28 @@ class Database
     Digest::SHA1.hexdigest(string)
   end
 
-  def write_object(oid, content)
-    object_path = @pathname.join(oid[0..1], oid[2..-1])
-    return if File.exist?(object_path)
+  def object_path(oid)
+    @pathname.join(oid[0..1], oid[2..-1])
+  end
 
-    dirname   = object_path.dirname
+  def read_object(oid)
+    data    = Zlib::Inflate.inflate(File.read(object_path(oid)))
+    scanner = StringScanner.new(data)
+
+    type  = scanner.scan_until(/ /).strip
+    _size = scanner.scan_until(/\0/)[0..-2]
+
+    object = TYPES[type].parse(scanner)
+    object.oid = oid
+
+    object
+  end
+
+  def write_object(oid, content)
+    path = object_path(oid)
+    return if File.exist?(path)
+
+    dirname   = path.dirname
     temp_path = dirname.join(generate_temp_name)
 
     begin
@@ -54,7 +84,7 @@ class Database
     file.write(compressed)
     file.close
 
-    File.rename(temp_path, object_path)
+    File.rename(temp_path, path)
   end
 
   def generate_temp_name
