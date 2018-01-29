@@ -178,5 +178,26 @@ describe Command::Status do
         M  a/b/3.txt
       STATUS
     end
+
+    it "reports deleted files" do
+      delete "1.txt"
+      delete ".git/index"
+      jit_cmd "add", "."
+
+      assert_status <<~STATUS
+        D  1.txt
+      STATUS
+    end
+
+    it "reports all deleted files inside directories" do
+      delete "a"
+      delete ".git/index"
+      jit_cmd "add", "."
+
+      assert_status <<~STATUS
+        D  a/2.txt
+        D  a/b/3.txt
+      STATUS
+    end
   end
 end
