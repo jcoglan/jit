@@ -42,6 +42,7 @@ module Command
 
       left = " "
       left = "A" if changes.include?(:index_added)
+      left = "M" if changes.include?(:index_modified)
 
       right = " "
       right = "D" if changes.include?(:workspace_deleted)
@@ -139,7 +140,11 @@ module Command
     def check_index_against_head_tree(entry)
       item = @head_tree[entry.path]
 
-      unless item
+      if item
+        unless entry.mode == item.mode and entry.oid == item.oid
+          record_change(entry.path, :index_modified)
+        end
+      else
         record_change(entry.path, :index_added)
       end
     end

@@ -160,5 +160,23 @@ describe Command::Status do
         A  d/e/5.txt
       STATUS
     end
+
+    it "reports modified modes" do
+      make_executable "1.txt"
+      jit_cmd "add", "."
+
+      assert_status <<~STATUS
+        M  1.txt
+      STATUS
+    end
+
+    it "reports modified contents" do
+      write_file "a/b/3.txt", "changed"
+      jit_cmd "add", "."
+
+      assert_status <<~STATUS
+        M  a/b/3.txt
+      STATUS
+    end
   end
 end
