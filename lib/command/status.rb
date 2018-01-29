@@ -17,6 +17,7 @@ module Command
       scan_workspace
       load_head_tree
       check_index_entries
+      collect_deleted_head_files
 
       repo.index.write_updates
 
@@ -43,6 +44,7 @@ module Command
       left = " "
       left = "A" if changes.include?(:index_added)
       left = "M" if changes.include?(:index_modified)
+      left = "D" if changes.include?(:index_deleted)
 
       right = " "
       right = "D" if changes.include?(:workspace_deleted)
@@ -146,6 +148,14 @@ module Command
         end
       else
         record_change(entry.path, :index_added)
+      end
+    end
+
+    def collect_deleted_head_files
+      @head_tree.each_key do |path|
+        unless repo.index.tracked_file?(path)
+          record_change(path, :index_deleted)
+        end
       end
     end
 
