@@ -1,4 +1,6 @@
 require "pathname"
+
+require_relative "../display"
 require_relative "../repository"
 
 module Command
@@ -13,6 +15,8 @@ module Command
       @stdin  = stdin
       @stdout = stdout
       @stderr = stderr
+
+      @display = Display.new(stdout)
     end
 
     def execute
@@ -29,8 +33,12 @@ module Command
       Pathname.new(File.expand_path(path, @dir))
     end
 
+    def fmt(style, string)
+      @display.fmt(style, string)
+    end
+
     def puts(string)
-      @stdout.puts(string)
+      @display.puts(string)
     end
 
     def exit(status = 0)
