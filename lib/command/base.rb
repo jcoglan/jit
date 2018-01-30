@@ -1,4 +1,6 @@
 require "pathname"
+
+require_relative "../color"
 require_relative "../repository"
 
 module Command
@@ -27,6 +29,10 @@ module Command
 
     def expanded_pathname(path)
       Pathname.new(File.expand_path(path, @dir))
+    end
+
+    def fmt(style, string)
+      @stdout.isatty ? Color.format(style, string) : string
     end
 
     def puts(string)
