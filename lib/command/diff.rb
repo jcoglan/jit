@@ -27,10 +27,22 @@ module Command
 
       blob   = Database::Blob.new(repo.workspace.read_file(path))
       b_oid  = repo.database.hash_object(blob)
+      b_mode = Index::Entry.mode_for_stat(@status.stats[path]).to_s(8)
       b_path = Pathname.new("b").join(path)
 
       puts "diff --git #{ a_path } #{ b_path }"
-      puts "index #{ short a_oid }..#{ short b_oid } #{ a_mode }"
+
+      unless a_mode == b_mode
+        puts "old mode #{ a_mode }"
+        puts "new mode #{ b_mode }"
+      end
+
+      return if a_oid == b_oid
+
+      oid_range = "index #{ short a_oid }..#{ short b_oid }"
+      oid_range.concat(" #{ a_mode }") if a_mode == b_mode
+
+      puts oid_range
       puts "--- #{ a_path }"
       puts "+++ #{ b_path }"
     end
