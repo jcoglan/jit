@@ -76,6 +76,10 @@ class Index
     end
   end
 
+  def entry_for_path(path)
+    @entries[path.to_s]
+  end
+
   def tracked_file?(path)
     @entries.has_key?(path.to_s)
   end
