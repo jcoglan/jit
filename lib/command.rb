@@ -1,5 +1,6 @@
 require_relative "./command/add"
 require_relative "./command/commit"
+require_relative "./command/diff"
 require_relative "./command/init"
 require_relative "./command/status"
 
@@ -10,7 +11,8 @@ module Command
     "init"   => Init,
     "add"    => Add,
     "commit" => Commit,
-    "status" => Status
+    "status" => Status,
+    "diff"   => Diff
   }
 
   def self.execute(dir, env, argv, stdin, stdout, stderr)
