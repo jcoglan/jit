@@ -29,5 +29,32 @@ describe Command::Diff do
         +++ b/file.txt
       DIFF
     end
+
+    it "diffs a file with changed mode" do
+      make_executable "file.txt"
+
+      assert_diff <<~DIFF
+        diff --git a/file.txt b/file.txt
+        old mode 100644
+        new mode 100755
+      DIFF
+    end
+
+    it "diffs a file with changed mode and contents" do
+      make_executable "file.txt"
+
+      write_file "file.txt", <<~FILE
+        changed
+      FILE
+
+      assert_diff <<~DIFF
+        diff --git a/file.txt b/file.txt
+        old mode 100644
+        new mode 100755
+        index 12f00e9..5ea2ed4
+        --- a/file.txt
+        +++ b/file.txt
+      DIFF
+    end
   end
 end
