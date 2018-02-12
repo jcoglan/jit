@@ -56,5 +56,17 @@ describe Command::Diff do
         +++ b/file.txt
       DIFF
     end
+
+    it "diffs a deleted file" do
+      delete "file.txt"
+
+      assert_diff <<~DIFF
+        diff --git a/file.txt b/file.txt
+        deleted file mode 100644
+        index 12f00e9..0000000
+        --- a/file.txt
+        +++ /dev/null
+      DIFF
+    end
   end
 end
