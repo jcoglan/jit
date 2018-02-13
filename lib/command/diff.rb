@@ -32,6 +32,7 @@ module Command
       @status.index_changes.each do |path, state|
         case state
         when :modified then print_diff(from_head(path), from_index(path))
+        when :deleted  then print_diff(from_head(path), from_nothing(path))
         end
       end
     end
