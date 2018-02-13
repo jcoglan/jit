@@ -31,6 +31,7 @@ module Command
     def diff_head_index
       @status.index_changes.each do |path, state|
         case state
+        when :added    then print_diff(from_nothing(path), from_index(path))
         when :modified then print_diff(from_head(path), from_index(path))
         when :deleted  then print_diff(from_head(path), from_nothing(path))
         end
@@ -84,7 +85,9 @@ module Command
     end
 
     def print_diff_mode(a, b)
-      if b.mode == nil
+      if a.mode == nil
+        puts "new file mode #{ b.mode }"
+      elsif b.mode == nil
         puts "deleted file mode #{ a.mode }"
       elsif a.mode != b.mode
         puts "old mode #{ a.mode }"
