@@ -140,5 +140,20 @@ describe Command::Diff do
         +++ /dev/null
       DIFF
     end
+
+    it "diffs an added file" do
+      write_file "another.txt", <<~FILE
+        hello
+      FILE
+      jit_cmd "add", "."
+
+      assert_diff_cached <<~DIFF
+        diff --git a/another.txt b/another.txt
+        new file mode 100644
+        index 0000000..ce01362
+        --- /dev/null
+        +++ b/another.txt
+      DIFF
+    end
   end
 end
