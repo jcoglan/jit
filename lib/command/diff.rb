@@ -17,17 +17,38 @@ module Command
       repo.index.load
       @status = repo.status
 
-      @status.workspace_changes.each do |path, state|
-        case state
-        when :modified then print_diff(from_index(path), from_file(path))
-        when :deleted  then print_diff(from_index(path), from_nothing(path))
-        end
+      if @args.first == "--cached"
+        diff_head_index
+      else
+        diff_index_workspace
       end
 
       exit 0
     end
 
     private
+
+    def diff_head_index
+      @status.index_changes.each do |path, state|
+        case state
+        when :modified then print_diff(from_head(path), from_index(path))
+        end
+      end
+    end
+
+    def diff_index_workspace
+      @status.workspace_changes.each do |path, state|
+        case state
+        when :modified then print_diff(from_index(path), from_file(path))
+        when :deleted  then print_diff(from_index(path), from_nothing(path))
+        end
+      end
+    end
+
+    def from_head(path)
+      entry = @status.head_tree.fetch(path)
+      Target.new(path, entry.oid, entry.mode.to_s(8))
+    end
 
     def from_index(path)
       entry = repo.index.entry_for_path(path)
