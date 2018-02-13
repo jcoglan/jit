@@ -9,6 +9,11 @@ describe Command::Diff do
     assert_stdout(output)
   end
 
+  def assert_diff_cached(output)
+    jit_cmd "diff", "--cached"
+    assert_stdout(output)
+  end
+
   describe "with a file in the index" do
     before do
       write_file "file.txt", <<~FILE
@@ -66,6 +71,59 @@ describe Command::Diff do
         index 12f00e9..0000000
         --- a/file.txt
         +++ /dev/null
+      DIFF
+    end
+  end
+
+  describe "with a HEAD commit" do
+    before do
+      write_file "file.txt", <<~FILE
+        contents
+      FILE
+      jit_cmd "add", "."
+      commit "first commit"
+    end
+
+    it "diffs a file with modified contents" do
+      write_file "file.txt", <<~FILE
+        changed
+      FILE
+      jit_cmd "add", "."
+
+      assert_diff_cached <<~DIFF
+        diff --git a/file.txt b/file.txt
+        index 12f00e9..5ea2ed4 100644
+        --- a/file.txt
+        +++ b/file.txt
+      DIFF
+    end
+
+    it "diffs a file with changed mode" do
+      make_executable "file.txt"
+      jit_cmd "add", "."
+
+      assert_diff_cached <<~DIFF
+        diff --git a/file.txt b/file.txt
+        old mode 100644
+        new mode 100755
+      DIFF
+    end
+
+    it "diffs a file with changed mode and contents" do
+      make_executable "file.txt"
+
+      write_file "file.txt", <<~FILE
+        changed
+      FILE
+      jit_cmd "add", "."
+
+      assert_diff_cached <<~DIFF
+        diff --git a/file.txt b/file.txt
+        old mode 100644
+        new mode 100755
+        index 12f00e9..5ea2ed4
+        --- a/file.txt
+        +++ b/file.txt
       DIFF
     end
   end
