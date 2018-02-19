@@ -1,5 +1,7 @@
 require "pathname"
+
 require_relative "./base"
+require_relative "../diff"
 
 module Command
   class Diff < Base
@@ -7,7 +9,7 @@ module Command
     NULL_OID  = "0" * 40
     NULL_PATH = "/dev/null"
 
-    Target = Struct.new(:path, :oid, :mode) do
+    Target = Struct.new(:path, :oid, :mode, :data) do
       def diff_path
         mode ? path : NULL_PATH
       end
@@ -58,7 +60,8 @@ module Command
     end
 
     def from_entry(path, entry)
-      Target.new(path, entry.oid, entry.mode.to_s(8))
+      blob = repo.database.load(entry.oid)
+      Target.new(path, entry.oid, entry.mode.to_s(8), blob.data)
     end
 
     def from_file(path)
@@ -66,11 +69,11 @@ module Command
       oid  = repo.database.hash_object(blob)
       mode = Index::Entry.mode_for_stat(@status.stats[path])
 
-      Target.new(path, oid, mode.to_s(8))
+      Target.new(path, oid, mode.to_s(8), blob.data)
     end
 
     def from_nothing(path)
-      Target.new(path, NULL_OID, nil)
+      Target.new(path, NULL_OID, nil, "")
     end
 
     def short(oid)
@@ -108,6 +111,9 @@ module Command
       puts oid_range
       puts "--- #{ a.diff_path }"
       puts "+++ #{ b.diff_path }"
+
+      edits = ::Diff.diff(a.data, b.data)
+      edits.each { |edit| puts edit }
     end
 
   end
