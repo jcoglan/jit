@@ -16,11 +16,11 @@ module Diff
         a_line, b_line = @a[prev_x], @b[prev_y]
 
         if x == prev_x
-          diff.push(Edit.new(:ins, b_line))
+          diff.push(Edit.new(:ins, nil, b_line))
         elsif y == prev_y
-          diff.push(Edit.new(:del, a_line))
+          diff.push(Edit.new(:del, a_line, nil))
         else
-          diff.push(Edit.new(:eql, a_line))
+          diff.push(Edit.new(:eql, a_line, b_line))
         end
       end
 
@@ -75,7 +75,7 @@ module Diff
 
           y = x - k
 
-          while x < n and y < m and @a[x] == @b[y]
+          while x < n and y < m and @a[x].text == @b[y].text
             x, y = x + 1, y + 1
           end
 
