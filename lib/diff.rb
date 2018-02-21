@@ -1,3 +1,4 @@
+require_relative "./diff/hunk"
 require_relative "./diff/myers"
 
 module Diff
@@ -23,5 +24,9 @@ module Diff
 
   def self.diff(a, b)
     Myers.diff(lines(a), lines(b))
+  end
+
+  def self.diff_hunks(a, b)
+    Hunk.filter(diff(a, b))
   end
 end
