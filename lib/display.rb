@@ -2,8 +2,10 @@ require "forwardable"
 
 class Display
   SGR_CODES = {
+    "bold"  =>  1,
     "red"   => 31,
-    "green" => 32
+    "green" => 32,
+    "cyan"  => 36
   }
 
   extend Forwardable
