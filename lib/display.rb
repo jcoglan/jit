@@ -9,7 +9,9 @@ class Display
   }
 
   extend Forwardable
-  def_delegators :@stdout, :puts
+  def_delegators :@stdout, :isatty, :puts
+
+  attr_reader :stdout
 
   def initialize(stdout)
     @stdout = stdout
@@ -21,5 +23,7 @@ class Display
     code = SGR_CODES.fetch(style.to_s)
     "\e[#{ code }m#{ string }\e[m"
   end
-end
 
+  def close
+  end
+end
