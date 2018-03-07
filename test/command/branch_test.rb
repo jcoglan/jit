@@ -38,5 +38,64 @@ describe Command::Branch do
         fatal: A branch named 'topic' already exists.
       ERROR
     end
+
+    it "creates a branch pointing at HEAD's parent" do
+      jit_cmd "branch", "topic", "HEAD^"
+
+      head = repo.database.load(repo.refs.read_head)
+
+      assert_equal head.parent,
+                   repo.refs.read_ref("topic")
+    end
+
+    it "creates a branch pointing at HEAD's grandparent" do
+      jit_cmd "branch", "topic", "@~2"
+
+      head   = repo.database.load(repo.refs.read_head)
+      parent = repo.database.load(head.parent)
+
+      assert_equal parent.parent,
+                   repo.refs.read_ref("topic")
+    end
+
+    it "creates a branch relative to another one" do
+      jit_cmd "branch", "topic", "@~1"
+      jit_cmd "branch", "another", "topic^"
+
+      assert_equal resolve_revision("HEAD~2"),
+                   repo.refs.read_ref("another")
+    end
+
+    it "fails for invalid revisions" do
+      jit_cmd "branch", "topic", "^"
+
+      assert_stderr <<~ERROR
+        fatal: Not a valid object name: '^'.
+      ERROR
+    end
+
+    it "fails for invalid refs" do
+      jit_cmd "branch", "topic", "no-such-branch"
+
+      assert_stderr <<~ERROR
+        fatal: Not a valid object name: 'no-such-branch'.
+      ERROR
+    end
+
+    it "fails for invalid parents" do
+      jit_cmd "branch", "topic", "@^^^^"
+
+      assert_stderr <<~ERROR
+        fatal: Not a valid object name: '@^^^^'.
+      ERROR
+    end
+
+    it "fails for invalid ancestors" do
+      jit_cmd "branch", "topic", "@~50"
+
+      assert_stderr <<~ERROR
+        fatal: Not a valid object name: '@~50'.
+      ERROR
+    end
   end
 end

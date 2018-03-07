@@ -27,7 +27,7 @@ class Refs
     path ? read_ref_file(path) : nil
   end
 
-  def create_branch(branch_name)
+  def create_branch(branch_name, start_oid)
     path = @heads_path.join(branch_name)
 
     unless Revision.valid_ref?(branch_name)
@@ -39,7 +39,7 @@ class Refs
     end
 
     FileUtils.mkdir_p(path.dirname)
-    update_ref_file(path, read_head)
+    update_ref_file(path, start_oid)
   end
 
   private

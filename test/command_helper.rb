@@ -87,4 +87,8 @@ module CommandHelper
     stream.rewind
     assert_equal(message, stream.read)
   end
+
+  def resolve_revision(expression)
+    Revision.new(repo, expression).resolve
+  end
 end
