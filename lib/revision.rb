@@ -1,7 +1,25 @@
 class Revision
-  Ref      = Struct.new(:name)
-  Parent   = Struct.new(:rev)
-  Ancestor = Struct.new(:rev, :n)
+  InvalidObject = Class.new(StandardError)
+
+  Ref = Struct.new(:name) do
+    def resolve(context)
+      context.read_ref(name)
+    end
+  end
+
+  Parent = Struct.new(:rev) do
+    def resolve(context)
+      context.commit_parent(rev.resolve(context))
+    end
+  end
+
+  Ancestor = Struct.new(:rev, :n) do
+    def resolve(context)
+      oid = rev.resolve(context)
+      n.times { oid = context.commit_parent(oid) }
+      oid
+    end
+  end
 
   INVALID_NAME = /
       ^\.
@@ -36,5 +54,29 @@ class Revision
 
   def self.valid_ref?(revision)
     INVALID_NAME =~ revision ? false : true
+  end
+
+  def initialize(repo, expression)
+    @repo  = repo
+    @expr  = expression
+    @query = Revision.parse(@expr)
+  end
+
+  def resolve
+    oid = @query&.resolve(self)
+    return oid if oid
+
+    raise InvalidObject, "Not a valid object name: '#{ @expr }'."
+  end
+
+  def read_ref(name)
+    @repo.refs.read_ref(name)
+  end
+
+  def commit_parent(oid)
+    return nil unless oid
+
+    commit = @repo.database.load(oid)
+    commit.parent
   end
 end

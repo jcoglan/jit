@@ -2,7 +2,7 @@ class Database
   class Commit
 
     attr_accessor :oid
-    attr_reader :tree
+    attr_reader :parent, :tree
 
     def self.parse(scanner)
       headers = {}
