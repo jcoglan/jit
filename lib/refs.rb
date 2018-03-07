@@ -1,19 +1,10 @@
 require "fileutils"
+
 require_relative "./lockfile"
+require_relative "./revision"
 
 class Refs
   InvalidBranch = Class.new(StandardError)
-
-  INVALID_NAME = /
-      ^\.
-    | \/\.
-    | \.\.
-    | ^\/
-    | \/$
-    | \.lock$
-    | @\{
-    | [\x00-\x20*:?\[\\^~\x7f]
-    /x
 
   HEAD = "HEAD"
 
@@ -39,7 +30,7 @@ class Refs
   def create_branch(branch_name)
     path = @heads_path.join(branch_name)
 
-    if INVALID_NAME =~ branch_name
+    unless Revision.valid_ref?(branch_name)
       raise InvalidBranch, "'#{ branch_name }' is not a valid branch name."
     end
 
