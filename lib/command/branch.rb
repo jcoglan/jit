@@ -18,7 +18,7 @@ module Command
 
       if start_point
         revision  = Revision.new(repo, start_point)
-        start_oid = revision.resolve
+        start_oid = revision.resolve(Revision::COMMIT)
       else
         start_oid = repo.refs.read_head
       end
