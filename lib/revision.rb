@@ -1,5 +1,6 @@
 class Revision
   InvalidObject = Class.new(StandardError)
+  HintedError   = Struct.new(:message, :hint)
 
   Ref = Struct.new(:name) do
     def resolve(context)
@@ -55,10 +56,13 @@ class Revision
     INVALID_NAME =~ revision ? false : true
   end
 
+  attr_reader :errors
+
   def initialize(repo, expression)
-    @repo  = repo
-    @expr  = expression
-    @query = Revision.parse(@expr)
+    @repo   = repo
+    @expr   = expression
+    @query  = Revision.parse(@expr)
+    @errors = []
   end
 
   def resolve
@@ -75,6 +79,10 @@ class Revision
     candidates = @repo.database.prefix_match(name)
     return candidates.first if candidates.size == 1
 
+    if candidates.size > 1
+      log_ambiguous_sha1(name, candidates)
+    end
+
     nil
   end
 
@@ -83,5 +91,25 @@ class Revision
 
     commit = @repo.database.load(oid)
     commit.parent
+  end
+
+  private
+
+  def log_ambiguous_sha1(name, candidates)
+    objects = candidates.sort.map do |oid|
+      object = @repo.database.load(oid)
+      short  = @repo.database.short_oid(object.oid)
+      info   = "  #{ short } #{ object.type }"
+
+      if object.type == "commit"
+        "#{ info } #{ object.author.short_date } - #{ object.title_line }"
+      else
+        info
+      end
+    end
+
+    message = "short SHA1 #{ name } is ambiguous"
+    hint = ["The candidates are:"] + objects
+    @errors.push(HintedError.new(message, hint))
   end
 end
