@@ -1,8 +1,10 @@
+require_relative "./author"
+
 class Database
   class Commit
 
     attr_accessor :oid
-    attr_reader :parent, :tree
+    attr_reader :parent, :tree, :author
 
     def self.parse(scanner)
       headers = {}
@@ -18,7 +20,7 @@ class Database
       Commit.new(
         headers["parent"],
         headers["tree"],
-        headers["author"],
+        Author.parse(headers["author"]),
         scanner.rest)
     end
 
@@ -27,6 +29,10 @@ class Database
       @tree    = tree
       @author  = author
       @message = message
+    end
+
+    def title_line
+      @message.lines.first
     end
 
     def type
