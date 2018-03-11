@@ -66,6 +66,14 @@ describe Command::Branch do
                    repo.refs.read_ref("another")
     end
 
+    it "creates a branch from a short commit ID" do
+      commit_id = resolve_revision("@~2")
+      jit_cmd "branch", "topic", repo.database.short_oid(commit_id)
+
+      assert_equal commit_id,
+                   repo.refs.read_ref("topic")
+    end
+
     it "fails for invalid revisions" do
       jit_cmd "branch", "topic", "^"
 
