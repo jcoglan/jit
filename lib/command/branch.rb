@@ -25,7 +25,15 @@ module Command
 
       repo.refs.create_branch(branch_name, start_oid)
 
-    rescue Refs::InvalidBranch, Revision::InvalidObject => error
+    rescue Refs::InvalidBranch => error
+      @stderr.puts "fatal: #{ error.message }"
+      exit 128
+
+    rescue Revision::InvalidObject => error
+      revision.errors.each do |err|
+        @stderr.puts "error: #{ err.message }"
+        err.hint.each { |line| @stderr.puts "hint: #{ line }" }
+      end
       @stderr.puts "fatal: #{ error.message }"
       exit 128
     end
