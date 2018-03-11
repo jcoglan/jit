@@ -41,6 +41,18 @@ class Database
     oid[0..6]
   end
 
+  def prefix_match(name)
+    dirname = object_path(name).dirname
+
+    oids = Dir.entries(dirname).map do |filename|
+      "#{ dirname.basename }#{ filename }"
+    end
+
+    oids.select { |oid| oid.start_with?(name) }
+  rescue Errno::ENOENT
+    []
+  end
+
   private
 
   def serialize_object(object)
