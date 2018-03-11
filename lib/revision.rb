@@ -70,7 +70,13 @@ class Revision
   end
 
   def read_ref(name)
-    @repo.refs.read_ref(name)
+    oid = @repo.refs.read_ref(name)
+    return oid if oid
+
+    candidates = @repo.database.prefix_match(name)
+    return candidates.first if candidates.size == 1
+
+    nil
   end
 
   def commit_parent(oid)
