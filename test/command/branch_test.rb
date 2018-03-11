@@ -105,5 +105,25 @@ describe Command::Branch do
         fatal: Not a valid object name: '@~50'.
       ERROR
     end
+
+    it "fails for revisions that are not commits" do
+      tree_id = repo.database.load(repo.refs.read_head).tree
+      jit_cmd "branch", "topic", tree_id
+
+      assert_stderr <<~ERROR
+        error: object #{ tree_id } is a tree, not a commit
+        fatal: Not a valid object name: '#{ tree_id }'.
+      ERROR
+    end
+
+    it "fails for parents of revisions that are not commits" do
+      tree_id = repo.database.load(repo.refs.read_head).tree
+      jit_cmd "branch", "topic", "#{ tree_id }^^"
+
+      assert_stderr <<~ERROR
+        error: object #{ tree_id } is a tree, not a commit
+        fatal: Not a valid object name: '#{ tree_id }^^'.
+      ERROR
+    end
   end
 end
