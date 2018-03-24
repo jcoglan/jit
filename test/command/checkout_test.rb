@@ -126,5 +126,42 @@ describe Command::Checkout do
       assert_workspace base_files
       assert_status ""
     end
+
+    it "maintains workspace modifications" do
+      write_file "1.txt", "changed"
+      commit_all
+
+      write_file "outer/2.txt", "hello"
+      delete "outer/inner"
+      jit_cmd "checkout", "@^"
+
+      assert_workspace \
+        "1.txt"       => "1",
+        "outer/2.txt" => "hello"
+
+      assert_status <<~STATUS
+        \ M outer/2.txt
+        \ D outer/inner/3.txt
+      STATUS
+    end
+
+    it "maintains index modifications" do
+      write_file "1.txt", "changed"
+      commit_all
+
+      write_file "outer/2.txt", "hello"
+      write_file "outer/inner/4.txt", "world"
+      jit_cmd "add", "."
+      jit_cmd "checkout", "@^"
+
+      assert_workspace base_files.merge(
+        "outer/2.txt"       => "hello",
+        "outer/inner/4.txt" => "world"
+      )
+      assert_status <<~STATUS
+        M  outer/2.txt
+        A  outer/inner/4.txt
+      STATUS
+    end
   end
 end
