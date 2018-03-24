@@ -17,6 +17,7 @@ class Repository
     def apply_changes
       plan_changes
       update_workspace
+      update_index
     end
 
     def blob_data(oid)
@@ -33,6 +34,19 @@ class Repository
 
     def update_workspace
       @repo.workspace.apply_migration(self)
+    end
+
+    def update_index
+      @changes[:delete].each do |path, _|
+        @repo.index.remove(path)
+      end
+
+      [:create, :update].each do |action|
+        @changes[action].each do |path, entry|
+          stat = @repo.workspace.stat_file(path)
+          @repo.index.add(path, entry.oid, stat)
+        end
+      end
     end
 
     def record_change(path, old_item, new_item)
