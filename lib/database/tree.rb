@@ -4,7 +4,7 @@ class Database
     ENTRY_FORMAT = "Z*H40"
     TREE_MODE    = 040000
 
-    attr_accessor :oid
+    attr_accessor :oid, :entries
 
     def self.parse(scanner)
       entries = {}
