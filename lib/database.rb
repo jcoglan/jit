@@ -7,6 +7,7 @@ require_relative "./database/blob"
 require_relative "./database/commit"
 require_relative "./database/entry"
 require_relative "./database/tree"
+require_relative "./database/tree_diff"
 
 class Database
   TEMP_CHARS = ("a".."z").to_a + ("A".."Z").to_a + ("0".."9").to_a
@@ -51,6 +52,12 @@ class Database
     oids.select { |oid| oid.start_with?(name) }
   rescue Errno::ENOENT
     []
+  end
+
+  def tree_diff(a, b)
+    diff = TreeDiff.new(self)
+    diff.compare_oids(a, b)
+    diff.changes
   end
 
   private
