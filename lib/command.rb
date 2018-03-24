@@ -1,5 +1,6 @@
 require_relative "./command/add"
 require_relative "./command/branch"
+require_relative "./command/checkout"
 require_relative "./command/commit"
 require_relative "./command/diff"
 require_relative "./command/init"
@@ -9,12 +10,13 @@ module Command
   Unknown = Class.new(StandardError)
 
   COMMANDS = {
-    "init"   => Init,
-    "add"    => Add,
-    "commit" => Commit,
-    "status" => Status,
-    "diff"   => Diff,
-    "branch" => Branch
+    "init"     => Init,
+    "add"      => Add,
+    "commit"   => Commit,
+    "status"   => Status,
+    "diff"     => Diff,
+    "branch"   => Branch,
+    "checkout" => Checkout
   }
 
   def self.execute(dir, env, argv, stdin, stdout, stderr)
