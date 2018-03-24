@@ -91,4 +91,18 @@ module CommandHelper
   def resolve_revision(expression)
     Revision.new(repo, expression).resolve
   end
+
+  def assert_workspace(contents)
+    files = {}
+
+    repo.workspace.list_files.sort.each do |pathname|
+      files[pathname.to_s] = repo.workspace.read_file(pathname)
+    end
+
+    assert_equal(contents, files)
+  end
+
+  def assert_noent(filename)
+    refute File.exist?(repo_path.join(filename))
+  end
 end

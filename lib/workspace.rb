@@ -1,3 +1,5 @@
+require "fileutils"
+
 class Workspace
   MissingFile  = Class.new(StandardError)
   NoPermission = Class.new(StandardError)
@@ -42,7 +44,48 @@ class Workspace
 
   def stat_file(path)
     File.stat(@pathname.join(path))
+  rescue Errno::ENOENT
+    nil
   rescue Errno::EACCES
     raise NoPermission, "stat('#{ path }'): Permission denied"
+  end
+
+  def apply_migration(migration)
+    apply_change_list(migration, :delete)
+    migration.rmdirs.sort.reverse_each { |dir| remove_directory(dir) }
+
+    migration.mkdirs.sort.each { |dir| make_directory(dir) }
+    apply_change_list(migration, :update)
+    apply_change_list(migration, :create)
+  end
+
+  private
+
+  def remove_directory(dirname)
+    Dir.rmdir(@pathname.join(dirname))
+  rescue Errno::ENOENT, Errno::ENOTDIR, Errno::ENOTEMPTY
+  end
+
+  def make_directory(dirname)
+    path = @pathname.join(dirname)
+    stat = stat_file(dirname)
+
+    File.unlink(path) if stat&.file?
+    Dir.mkdir(path) unless stat&.directory?
+  end
+
+  def apply_change_list(migration, action)
+    migration.changes[action].each do |filename, entry|
+      path = @pathname.join(filename)
+
+      FileUtils.rm_rf(path)
+      next if action == :delete
+
+      flags = File::WRONLY | File::CREAT | File::EXCL
+      data  = migration.blob_data(entry.oid)
+
+      File.open(path, flags) { |file| file.write(data) }
+      File.chmod(entry.mode, path)
+    end
   end
 end
