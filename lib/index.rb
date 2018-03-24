@@ -68,6 +68,12 @@ class Index
     @changed = true
   end
 
+  def remove(pathname)
+    remove_entry(pathname)
+    remove_children(pathname.to_s)
+    @changed = true
+  end
+
   def each_entry
     if block_given?
       @keys.each { |key| yield @entries[key] }

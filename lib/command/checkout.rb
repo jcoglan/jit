@@ -12,9 +12,14 @@ module Command
       revision    = Revision.new(repo, @target)
       @target_oid = revision.resolve(Revision::COMMIT)
 
+      repo.index.load_for_update
+
       tree_diff = repo.database.tree_diff(@current_oid, @target_oid)
       migration = repo.migration(tree_diff)
       migration.apply_changes
+
+      repo.index.write_updates
+      repo.refs.update_head(@target_oid)
 
       exit 0
 

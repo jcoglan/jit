@@ -16,6 +16,11 @@ describe Command::Checkout do
       jit_cmd "checkout", revision
     end
 
+    def assert_status(status)
+      jit_cmd "status", "--porcelain"
+      assert_stdout status
+    end
+
     base_files = {
       "1.txt"             => "1",
       "outer/2.txt"       => "2",
@@ -35,6 +40,7 @@ describe Command::Checkout do
       commit_and_checkout "@^"
 
       assert_workspace base_files
+      assert_status ""
     end
 
     it "removes a file" do
@@ -42,6 +48,7 @@ describe Command::Checkout do
       commit_and_checkout "@^"
 
       assert_workspace base_files
+      assert_status ""
     end
 
     it "removes a file from an existing directory" do
@@ -49,6 +56,7 @@ describe Command::Checkout do
       commit_and_checkout "@^"
 
       assert_workspace base_files
+      assert_status ""
     end
 
     it "removes a file from a new directory" do
@@ -57,6 +65,7 @@ describe Command::Checkout do
 
       assert_workspace base_files
       assert_noent "new"
+      assert_status ""
     end
 
     it "removes a file from a new nested directory" do
@@ -65,6 +74,7 @@ describe Command::Checkout do
 
       assert_workspace base_files
       assert_noent "new"
+      assert_status ""
     end
 
     it "removes a file from a non-empty directory" do
@@ -72,6 +82,7 @@ describe Command::Checkout do
       commit_and_checkout "@^"
 
       assert_workspace base_files
+      assert_status ""
     end
 
     it "adds a file" do
@@ -79,6 +90,7 @@ describe Command::Checkout do
       commit_and_checkout "@^"
 
       assert_workspace base_files
+      assert_status ""
     end
 
     it "adds a file to a directory" do
@@ -86,6 +98,7 @@ describe Command::Checkout do
       commit_and_checkout "@^"
 
       assert_workspace base_files
+      assert_status ""
     end
 
     it "adds a directory" do
@@ -93,6 +106,7 @@ describe Command::Checkout do
       commit_and_checkout "@^"
 
       assert_workspace base_files
+      assert_status ""
     end
 
     it "replaces a file with a directory" do
@@ -101,6 +115,7 @@ describe Command::Checkout do
       commit_and_checkout "@^"
 
       assert_workspace base_files
+      assert_status ""
     end
 
     it "replaces a directory with a file" do
@@ -109,6 +124,7 @@ describe Command::Checkout do
       commit_and_checkout "@^"
 
       assert_workspace base_files
+      assert_status ""
     end
   end
 end
