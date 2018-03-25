@@ -44,7 +44,7 @@ class Workspace
 
   def stat_file(path)
     File.stat(@pathname.join(path))
-  rescue Errno::ENOENT
+  rescue Errno::ENOENT, Errno::ENOTDIR
     nil
   rescue Errno::EACCES
     raise NoPermission, "stat('#{ path }'): Permission denied"
