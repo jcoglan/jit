@@ -19,7 +19,7 @@ module Command
       migration.apply_changes
 
       repo.index.write_updates
-      repo.refs.update_head(@target_oid)
+      repo.refs.set_head(@target, @target_oid)
 
       exit 0
 

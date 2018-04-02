@@ -647,4 +647,49 @@ describe Command::Checkout do
       STATUS
     end
   end
+
+  describe "with a chain of commits" do
+    before do
+      messages = ["first", "second", "third"]
+
+      messages.each do |message|
+        write_file "file.txt", message
+        jit_cmd "add", "."
+        commit message
+      end
+
+      jit_cmd "branch", "topic"
+      jit_cmd "branch", "second", "@^"
+    end
+
+    describe "checking out a branch" do
+      before do
+        jit_cmd "checkout", "topic"
+      end
+
+      it "links HEAD to the branch" do
+        assert_equal "refs/heads/topic", repo.refs.current_ref.path
+      end
+
+      it "resolves HEAD to the same object as the branch" do
+        assert_equal repo.refs.read_ref("topic"),
+                     repo.refs.read_head
+      end
+    end
+
+    describe "checking out a relative revision" do
+      before do
+        jit_cmd "checkout", "topic^"
+      end
+
+      it "detaches HEAD" do
+        assert_equal "HEAD", repo.refs.current_ref.path
+      end
+
+      it "puts the revision's value in HEAD" do
+        assert_equal resolve_revision("topic^"),
+                     repo.refs.read_head
+      end
+    end
+  end
 end
