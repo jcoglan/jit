@@ -675,6 +675,43 @@ describe Command::Checkout do
         assert_equal repo.refs.read_ref("topic"),
                      repo.refs.read_head
       end
+
+      it "prints a message when switching to the same branch" do
+        jit_cmd "checkout", "topic"
+
+        assert_stderr <<~MSG
+          Already on 'topic'
+        MSG
+      end
+
+      it "prints a message when switching to another branch" do
+        jit_cmd "checkout", "second"
+
+        assert_stderr <<~MSG
+          Switched to branch 'second'
+        MSG
+      end
+
+      it "prints a warning when detaching HEAD" do
+        short_oid = repo.database.short_oid(resolve_revision("@"))
+
+        jit_cmd "checkout", "@"
+
+        assert_stderr <<~MSG
+          Note: checking out '@'.
+
+          You are in 'detached HEAD' state. You can look around, make experimental
+          changes and commit them, and you can discard any commits you make in this
+          state without impacting any branches by performing another checkout.
+
+          If you want to create a new branch to retain commits you create, you may
+          do so (now or later) by using the branch command. Example:
+
+            jit branch <new-branch-name>
+
+          HEAD is now at #{ short_oid } third
+        MSG
+      end
     end
 
     describe "checking out a relative revision" do
@@ -689,6 +726,47 @@ describe Command::Checkout do
       it "puts the revision's value in HEAD" do
         assert_equal resolve_revision("topic^"),
                      repo.refs.read_head
+      end
+
+      it "prints a message when switching to the same commit" do
+        short_oid = repo.database.short_oid(resolve_revision("@"))
+
+        jit_cmd "checkout", "@"
+
+        assert_stderr <<~MSG
+          HEAD is now at #{ short_oid } second
+        MSG
+      end
+
+      it "prints a message when switching to a different commit" do
+        a = repo.database.short_oid(resolve_revision("@"))
+        b = repo.database.short_oid(resolve_revision("@^"))
+
+        jit_cmd "checkout", "@^"
+
+        assert_stderr <<~MSG
+          Previous HEAD position was #{ a } second
+          HEAD is now at #{ b } first
+        MSG
+      end
+
+      it "prints a message when switching to a branch with the same ID" do
+        jit_cmd "checkout", "second"
+
+        assert_stderr <<~MSG
+          Switched to branch 'second'
+        MSG
+      end
+
+      it "prints a message when switching to a different branch" do
+        short_oid = repo.database.short_oid(resolve_revision("@"))
+
+        jit_cmd "checkout", "topic"
+
+        assert_stderr <<~MSG
+          Previous HEAD position was #{ short_oid } second
+          Switched to branch 'topic'
+        MSG
       end
     end
   end

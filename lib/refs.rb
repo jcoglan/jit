@@ -6,8 +6,21 @@ require_relative "./revision"
 class Refs
   InvalidBranch = Class.new(StandardError)
 
-  SymRef = Struct.new(:path)
-  Ref    = Struct.new(:oid)
+  SymRef = Struct.new(:refs, :path) do
+    def read_oid
+      refs.read_ref(path)
+    end
+
+    def head?
+      path == HEAD
+    end
+  end
+
+  Ref = Struct.new(:oid) do
+    def read_oid
+      oid
+    end
+  end
 
   HEAD   = "HEAD"
   SYMREF = /^ref: (.+)$/
@@ -62,7 +75,7 @@ class Refs
 
     case ref
     when SymRef   then current_ref(ref.path)
-    when Ref, nil then SymRef.new(source)
+    when Ref, nil then SymRef.new(self, source)
     end
   end
 
@@ -79,7 +92,7 @@ class Refs
     data  = File.read(path).strip
     match = SYMREF.match(data)
 
-    match ? SymRef.new(match[1]) : Ref.new(data)
+    match ? SymRef.new(self, match[1]) : Ref.new(data)
   rescue Errno::ENOENT
     nil
   end
