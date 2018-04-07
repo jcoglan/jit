@@ -4,13 +4,53 @@ require_relative "../revision"
 module Command
   class Branch < Base
 
+    def define_options
+      @parser.on("-v", "--verbose") { @options[:verbose] = true }
+    end
+
     def run
-      create_branch
+      if @args.empty?
+        list_branches
+      else
+        create_branch
+      end
 
       exit 0
     end
 
     private
+
+    def list_branches
+      current   = repo.refs.current_ref
+      branches  = repo.refs.list_branches.sort_by(&:path)
+      max_width = branches.map { |b| b.short_name.size }.max
+
+      setup_pager
+
+      branches.each do |ref|
+        info = format_ref(ref, current)
+        info.concat(extended_branch_info(ref, max_width))
+        puts info
+      end
+    end
+
+    def format_ref(ref, current)
+      if ref == current
+        "* #{ fmt :green, ref.short_name }"
+      else
+        "  #{ ref.short_name }"
+      end
+    end
+
+    def extended_branch_info(ref, max_width)
+      return "" unless @options[:verbose]
+
+      commit = repo.database.load(ref.read_oid)
+      short  = repo.database.short_oid(commit.oid)
+      space  = " " * (max_width - ref.short_name.size)
+
+      "#{ space } #{ short } #{ commit.title_line }"
+    end
 
     def create_branch
       branch_name = @args[0]
