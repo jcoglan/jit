@@ -125,5 +125,28 @@ describe Command::Branch do
         fatal: Not a valid object name: '#{ tree_id }^^'.
       ERROR
     end
+
+    it "lists existing branches" do
+      jit_cmd "branch", "new-feature"
+      jit_cmd "branch"
+
+      assert_stdout <<~BRANCH
+        * master
+          new-feature
+      BRANCH
+    end
+
+    it "lists existing branches with verbose info" do
+      a = load_commit("@^")
+      b = load_commit("@")
+
+      jit_cmd "branch", "new-feature", "@^"
+      jit_cmd "branch", "--verbose"
+
+      assert_stdout <<~BRANCH
+        * master      #{ repo.database.short_oid(b.oid) } third
+          new-feature #{ repo.database.short_oid(a.oid) } second
+      BRANCH
+    end
   end
 end
