@@ -14,6 +14,10 @@ class Refs
     def head?
       path == HEAD
     end
+
+    def short_name
+      refs.short_name(path)
+    end
   end
 
   Ref = Struct.new(:oid) do
@@ -80,7 +84,37 @@ class Refs
     end
   end
 
+  def list_branches
+    list_refs(@heads_path)
+  end
+
+  def short_name(path)
+    path = @pathname.join(path)
+
+    prefix = [@heads_path, @pathname].find do |dir|
+      path.dirname.ascend.any? { |parent| parent == dir }
+    end
+
+    path.relative_path_from(prefix).to_s
+  end
+
   private
+
+  def list_refs(dirname)
+    names = Dir.entries(dirname) - [".", ".."]
+
+    names.map { |name| dirname.join(name) }.flat_map do |path|
+      if File.directory?(path)
+        list_refs(path)
+      else
+        path = path.relative_path_from(@pathname)
+        SymRef.new(self, path.to_s)
+      end
+    end
+
+  rescue Errno::ENOENT
+    []
+  end
 
   def path_for_name(name)
     prefixes = [@pathname, @refs_path, @heads_path]
