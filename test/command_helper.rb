@@ -92,6 +92,10 @@ module CommandHelper
     Revision.new(repo, expression).resolve
   end
 
+  def load_commit(expression)
+    repo.database.load(resolve_revision(expression))
+  end
+
   def assert_workspace(contents)
     files = {}
 
