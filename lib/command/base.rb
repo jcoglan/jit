@@ -1,3 +1,4 @@
+require "optparse"
 require "pathname"
 
 require_relative "../display"
@@ -21,6 +22,7 @@ module Command
     end
 
     def execute
+      parse_options
       catch(:exit) { run }
       @display.close
     end
@@ -33,6 +35,17 @@ module Command
 
     def expanded_pathname(path)
       Pathname.new(File.expand_path(path, @dir))
+    end
+
+    def parse_options
+      @options = {}
+      @parser  = OptionParser.new
+
+      define_options
+      @parser.parse!(@args)
+    end
+
+    def define_options
     end
 
     def setup_pager

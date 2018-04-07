@@ -17,6 +17,11 @@ module Command
       :modified => "M"
     }
 
+    def define_options
+      @options[:format] = "long"
+      @parser.on("--porcelain") { @options[:format] = "porcelain" }
+    end
+
     def run
       repo.index.load_for_update
       @status = repo.status
@@ -29,10 +34,9 @@ module Command
     private
 
     def print_results
-      if @args.first == "--porcelain"
-        print_porcelain_format
-      else
-        print_long_format
+      case @options[:format]
+      when "long"      then print_long_format
+      when "porcelain" then print_porcelain_format
       end
     end
 
