@@ -6,10 +6,19 @@ module Command
 
     def define_options
       @parser.on("-v", "--verbose") { @options[:verbose] = true }
+
+      @parser.on("-d", "--delete") { @options[:delete] = true }
+      @parser.on("-f", "--force")  { @options[:force]  = true }
+
+      @parser.on "-D" do
+        @options[:delete] = @options[:force] = true
+      end
     end
 
     def run
-      if @args.empty?
+      if @options[:delete]
+        delete_branches
+      elsif @args.empty?
         list_branches
       else
         create_branch
@@ -76,6 +85,23 @@ module Command
       end
       @stderr.puts "fatal: #{ error.message }"
       exit 128
+    end
+
+    def delete_branches
+      @args.each { |branch_name| delete_branch(branch_name) }
+    end
+
+    def delete_branch(branch_name)
+      return unless @options[:force]
+
+      oid   = repo.refs.delete_branch(branch_name)
+      short = repo.database.short_oid(oid)
+
+      puts "Deleted branch #{ branch_name } (was #{ short })."
+
+    rescue Refs::InvalidBranch => error
+      @stderr.puts "error: #{ error }"
+      exit 1
     end
 
   end
