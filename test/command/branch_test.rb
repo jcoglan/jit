@@ -148,5 +148,29 @@ describe Command::Branch do
           new-feature #{ repo.database.short_oid(a.oid) } second
       BRANCH
     end
+
+    it "deletes a branch" do
+      head = repo.refs.read_head
+
+      jit_cmd "branch", "bug-fix"
+      jit_cmd "branch", "-D", "bug-fix"
+
+      assert_stdout <<~MSG
+        Deleted branch bug-fix (was #{ repo.database.short_oid(head) }).
+      MSG
+
+      branches = repo.refs.list_branches
+      refute_includes branches.map(&:short_name), "bug-fix"
+    end
+
+    it "fails to delete a non-existent branch" do
+      jit_cmd "branch", "-D", "no-such-branch"
+
+      assert_status 1
+
+      assert_stderr <<~ERROR
+        error: branch 'no-such-branch' not found.
+      ERROR
+    end
   end
 end

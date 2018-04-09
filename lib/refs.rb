@@ -74,6 +74,23 @@ class Refs
     update_ref_file(path, start_oid)
   end
 
+  def delete_branch(branch_name)
+    path = @heads_path.join(branch_name)
+
+    lockfile = Lockfile.new(path)
+    lockfile.hold_for_update
+
+    oid = read_symref(path)
+    raise InvalidBranch, "branch '#{ branch_name }' not found." unless oid
+
+    File.unlink(path)
+    delete_parent_directories(path)
+
+    oid
+  ensure
+    lockfile.rollback
+  end
+
   def current_ref(source = HEAD)
     ref = read_oid_or_symref(@pathname.join(source))
 
@@ -120,6 +137,17 @@ class Refs
     prefix   = prefixes.find { |path| File.file? path.join(name) }
 
     prefix ? prefix.join(name) : nil
+  end
+
+  def delete_parent_directories(path)
+    path.dirname.ascend do |dir|
+      break if dir == @heads_path
+      begin
+        Dir.rmdir(dir)
+      rescue Errno::ENOTEMPTY
+        break
+      end
+    end
   end
 
   def read_oid_or_symref(path)
