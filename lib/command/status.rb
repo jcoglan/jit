@@ -41,6 +41,8 @@ module Command
     end
 
     def print_long_format
+      print_branch_status
+
       print_changes("Changes to be committed",
           @status.index_changes, :green)
 
@@ -51,6 +53,16 @@ module Command
           @status.untracked_files, :red)
 
       print_commit_status
+    end
+
+    def print_branch_status
+      current = repo.refs.current_ref
+
+      if current.head?
+        puts fmt(:red, "Not currently on any branch.")
+      else
+        puts "On branch #{ current.short_name }"
+      end
     end
 
     def print_changes(message, changeset, style)
