@@ -69,5 +69,25 @@ describe Command::Log do
             A
       LOGS
     end
+
+    it "prints a log in oneline format" do
+      jit_cmd "log", "--oneline"
+
+      assert_stdout <<~LOGS
+        #{ repo.database.short_oid @commits[0].oid } C
+        #{ repo.database.short_oid @commits[1].oid } B
+        #{ repo.database.short_oid @commits[2].oid } A
+      LOGS
+    end
+
+    it "prints a log in oneline format without abbreviated commit IDs" do
+      jit_cmd "log", "--pretty=oneline"
+
+      assert_stdout <<~LOGS
+        #{ @commits[0].oid } C
+        #{ @commits[1].oid } B
+        #{ @commits[2].oid } A
+      LOGS
+    end
   end
 end
