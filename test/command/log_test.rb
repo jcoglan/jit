@@ -45,5 +45,29 @@ describe Command::Log do
             A
       LOGS
     end
+
+    it "prints a log in medium format with abbreviated commit IDs" do
+      jit_cmd "log", "--abbrev-commit"
+
+      assert_stdout <<~LOGS
+        commit #{ repo.database.short_oid @commits[0].oid }
+        Author: A. U. Thor <author@example.com>
+        Date:   #{ @commits[0].author.readable_time }
+
+            C
+
+        commit #{ repo.database.short_oid @commits[1].oid }
+        Author: A. U. Thor <author@example.com>
+        Date:   #{ @commits[1].author.readable_time }
+
+            B
+
+        commit #{ repo.database.short_oid @commits[2].oid }
+        Author: A. U. Thor <author@example.com>
+        Date:   #{ @commits[2].author.readable_time }
+
+            A
+      LOGS
+    end
   end
 end
