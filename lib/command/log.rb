@@ -3,6 +3,14 @@ require_relative "./base"
 module Command
   class Log < Base
 
+    def define_options
+      @options[:abbrev] = :auto
+
+      @parser.on "--[no-]abbrev-commit" do |value|
+        @options[:abbrev] = value
+      end
+    end
+
     def run
       setup_pager
       each_commit { |commit| show_commit(commit) }
@@ -30,11 +38,19 @@ module Command
       author = commit.author
 
       blank_line
-      puts fmt(:yellow, "commit #{ commit.oid }")
+      puts fmt(:yellow, "commit #{ abbrev(commit) }")
       puts "Author: #{ author.name } <#{ author.email }>"
       puts "Date:   #{ author.readable_time }"
       blank_line
       commit.message.each_line { |line| puts "    #{ line }" }
+    end
+
+    def abbrev(commit)
+      if @options[:abbrev] == true
+        repo.database.short_oid(commit.oid)
+      else
+        commit.oid
+      end
     end
 
   end
