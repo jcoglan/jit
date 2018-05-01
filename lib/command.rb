@@ -4,6 +4,7 @@ require_relative "./command/checkout"
 require_relative "./command/commit"
 require_relative "./command/diff"
 require_relative "./command/init"
+require_relative "./command/log"
 require_relative "./command/status"
 
 module Command
@@ -16,7 +17,8 @@ module Command
     "status"   => Status,
     "diff"     => Diff,
     "branch"   => Branch,
-    "checkout" => Checkout
+    "checkout" => Checkout,
+    "log"      => Log
   }
 
   def self.execute(dir, env, argv, stdin, stdout, stderr)
