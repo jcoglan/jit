@@ -15,6 +15,10 @@ class Database
       time.strftime("%Y-%m-%d")
     end
 
+    def readable_time
+      time.strftime("%a %b %-d %H:%M:%S %Y %z")
+    end
+
     def to_s
       timestamp = time.strftime(TIME_FORMAT)
       "#{ name } <#{ email }> #{ timestamp }"
