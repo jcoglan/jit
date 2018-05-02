@@ -8,7 +8,7 @@ module Color
   }
 
   def self.format(style, string)
-    code = SGR_CODES.fetch(style.to_s)
-    "\e[#{ code }m#{ string }\e[m"
+    codes = [*style].map { |name| SGR_CODES.fetch(name.to_s) }
+    "\e[#{ codes.join(";") }m#{ string }\e[m"
   end
 end
