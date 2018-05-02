@@ -21,8 +21,8 @@ class Display
   def fmt(style, string)
     return string unless @stdout.isatty
 
-    code = SGR_CODES.fetch(style.to_s)
-    "\e[#{ code }m#{ string }\e[m"
+    codes = [*style].map { |name| SGR_CODES.fetch(name.to_s) }
+    "\e[#{ codes.join(";") }m#{ string }\e[m"
   end
 
   def close
