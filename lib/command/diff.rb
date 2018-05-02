@@ -7,6 +7,9 @@ module Command
     include PrintDiff
 
     def define_options
+      @options[:patch] = true
+      define_print_diff_options
+
       @parser.on "--cached", "--staged" do
         @options[:cached] = true
       end
@@ -30,6 +33,8 @@ module Command
     private
 
     def diff_head_index
+      return unless @options[:patch]
+
       @status.index_changes.each do |path, state|
         case state
         when :added    then print_diff(from_nothing(path), from_index(path))
@@ -40,6 +45,8 @@ module Command
     end
 
     def diff_index_workspace
+      return unless @options[:patch]
+
       @status.workspace_changes.each do |path, state|
         case state
         when :modified then print_diff(from_index(path), from_file(path))
