@@ -100,8 +100,23 @@ class Refs
     end
   end
 
+  def list_all_refs
+    [SymRef.new(self, HEAD)] + list_refs(@refs_path)
+  end
+
   def list_branches
     list_refs(@heads_path)
+  end
+
+  def reverse_refs
+    table = Hash.new { |hash, key| hash[key] = [] }
+
+    list_all_refs.each do |ref|
+      oid = ref.read_oid
+      table[oid].push(ref) if oid
+    end
+
+    table
   end
 
   def short_name(path)

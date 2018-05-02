@@ -19,6 +19,8 @@ describe Command::Log do
       messages = ["A", "B", "C"]
       messages.each { |message| commit_file message }
 
+      jit_cmd "branch", "topic", "@^^"
+
       @commits = ["@", "@^", "@^^"].map { |rev| load_commit(rev) }
     end
 
@@ -87,6 +89,37 @@ describe Command::Log do
         #{ @commits[0].oid } C
         #{ @commits[1].oid } B
         #{ @commits[2].oid } A
+      LOGS
+    end
+
+    it "prints a log with short decorations" do
+      jit_cmd "log", "--pretty=oneline", "--decorate=short"
+
+      assert_stdout <<~LOGS
+        #{ @commits[0].oid } (HEAD -> master) C
+        #{ @commits[1].oid } B
+        #{ @commits[2].oid } (topic) A
+      LOGS
+    end
+
+    it "prints a log with detached HEAD" do
+      jit_cmd "checkout", "@"
+      jit_cmd "log", "--pretty=oneline", "--decorate=short"
+
+      assert_stdout <<~LOGS
+        #{ @commits[0].oid } (HEAD, master) C
+        #{ @commits[1].oid } B
+        #{ @commits[2].oid } (topic) A
+      LOGS
+    end
+
+    it "prints a log with full decorations" do
+      jit_cmd "log", "--pretty=oneline", "--decorate=full"
+
+      assert_stdout <<~LOGS
+        #{ @commits[0].oid } (HEAD -> refs/heads/master) C
+        #{ @commits[1].oid } B
+        #{ @commits[2].oid } (refs/heads/topic) A
       LOGS
     end
   end
