@@ -23,6 +23,8 @@ module Command
 
       if @options[:cached]
         diff_head_index
+      elsif @args.size == 2
+        diff_commits
       else
         diff_index_workspace
       end
@@ -31,6 +33,13 @@ module Command
     end
 
     private
+
+    def diff_commits
+      return unless @options[:patch]
+
+      a, b = @args.map { |rev| Revision.new(repo, rev).resolve }
+      print_commit_diff(a, b)
+    end
 
     def diff_head_index
       return unless @options[:patch]

@@ -1,12 +1,18 @@
 require_relative "./base"
+require_relative "./shared/print_diff"
 
 module Command
   class Log < Base
+
+    include PrintDiff
 
     def define_options
       @options[:decorate] = "auto"
       @options[:abbrev]   = :auto
       @options[:format]   = "medium"
+      @options[:patch]    = false
+
+      define_print_diff_options
 
       @parser.on "--decorate[=<format>]" do |format|
         @options[:decorate] = format || "short"
@@ -54,6 +60,7 @@ module Command
     end
 
     def blank_line
+      return if @options[:format] == "oneline"
       puts "" if defined? @blank_line
       @blank_line = true
     end
@@ -63,6 +70,8 @@ module Command
       when "medium"  then show_commit_medium(commit)
       when "oneline" then show_commit_oneline(commit)
       end
+
+      show_patch(commit)
     end
 
     def show_commit_medium(commit)
@@ -121,6 +130,13 @@ module Command
 
     def ref_color(ref)
       ref.head? ? [:bold, :cyan] : [:bold, :green]
+    end
+
+    def show_patch(commit)
+      return unless @options[:patch]
+
+      blank_line
+      print_commit_diff(commit.parent, commit.oid)
     end
 
   end
