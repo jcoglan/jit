@@ -64,11 +64,11 @@ module CommandHelper
     @cmd = Command.execute(repo_path.to_s, @env, argv, @stdin, @stdout, @stderr)
   end
 
-  def commit(message)
+  def commit(message, time = nil)
     set_env("GIT_AUTHOR_NAME", "A. U. Thor")
     set_env("GIT_AUTHOR_EMAIL", "author@example.com")
     set_stdin(message)
-    jit_cmd("commit")
+    Time.stub(:now, time || Time.now) { jit_cmd("commit") }
   end
 
   def assert_status(status)
