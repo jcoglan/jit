@@ -43,7 +43,7 @@ module Command
       @reverse_refs = repo.refs.reverse_refs
       @current_ref  = repo.refs.current_ref
 
-      @rev_list = RevList.new(repo, @args[0])
+      @rev_list = RevList.new(repo, @args)
       @rev_list.each { |commit| show_commit(commit) }
 
       exit 0

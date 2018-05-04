@@ -31,6 +31,10 @@ class Database
       @message = message
     end
 
+    def date
+      @author.time
+    end
+
     def title_line
       @message.lines.first
     end
