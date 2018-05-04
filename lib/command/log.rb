@@ -1,6 +1,6 @@
 require_relative "./base"
 require_relative "./shared/print_diff"
-require_relative "../revision"
+require_relative "../rev_list"
 
 module Command
   class Log < Base
@@ -43,23 +43,13 @@ module Command
       @reverse_refs = repo.refs.reverse_refs
       @current_ref  = repo.refs.current_ref
 
-      each_commit { |commit| show_commit(commit) }
+      @rev_list = RevList.new(repo, @args[0])
+      @rev_list.each { |commit| show_commit(commit) }
 
       exit 0
     end
 
     private
-
-    def each_commit
-      start = @args.fetch(0, Revision::HEAD)
-      oid   = Revision.new(repo, start).resolve(Revision::COMMIT)
-
-      while oid
-        commit = repo.database.load(oid)
-        yield commit
-        oid = commit.parent
-      end
-    end
 
     def blank_line
       return if @options[:format] == "oneline"
