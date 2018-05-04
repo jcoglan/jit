@@ -92,6 +92,15 @@ describe Command::Log do
       LOGS
     end
 
+    it "prints a log starting from a specified commit" do
+      jit_cmd "log", "--pretty=oneline", "@^"
+
+      assert_stdout <<~LOGS
+        #{ @commits[1].oid } B
+        #{ @commits[2].oid } A
+      LOGS
+    end
+
     it "prints a log with short decorations" do
       jit_cmd "log", "--pretty=oneline", "--decorate=short"
 
