@@ -36,8 +36,10 @@ class Revision
   PARENT   = /^(.+)\^$/
   ANCESTOR = /^(.+)~(\d+)$/
 
+  HEAD = "HEAD"
+
   REF_ALIASES = {
-    "@" => "HEAD"
+    "@" => HEAD
   }
 
   COMMIT = "commit"
