@@ -5,9 +5,11 @@ class Database
 
     attr_reader :changes
 
-    def initialize(database)
+    def initialize(database, prune = [])
       @database = database
       @changes  = {}
+
+      build_routing_table(prune)
     end
 
     def compare_oids(a, b, prefix = Pathname.new(""))
@@ -22,6 +24,19 @@ class Database
 
     private
 
+    def build_routing_table(prune)
+      @routes = {}
+
+      prune.each do |path|
+        table = @routes
+        path.each_filename { |name| table = table[name] ||= {} }
+      end
+    end
+
+    def routes_for_prefix(prefix)
+      prefix.each_filename.reduce(@routes) { |table, name| table[name] || {} }
+    end
+
     def oid_to_tree(oid)
       object = @database.load(oid)
 
@@ -32,7 +47,11 @@ class Database
     end
 
     def detect_deletions(a, b, prefix)
+      routes = routes_for_prefix(prefix)
+
       a.each do |name, entry|
+        next unless routes.empty? or routes.has_key?(name)
+
         path  = prefix.join(name)
         other = b[name]
 
@@ -47,7 +66,11 @@ class Database
     end
 
     def detect_additions(a, b, prefix)
+      routes = routes_for_prefix(prefix)
+
       b.each do |name, entry|
+        next unless routes.empty? or routes.has_key?(name)
+
         path  = prefix.join(name)
         other = a[name]
 
