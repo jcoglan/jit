@@ -9,6 +9,8 @@ require_relative "./database/entry"
 require_relative "./database/tree"
 require_relative "./database/tree_diff"
 
+require_relative "./path_filter"
+
 class Database
   TEMP_CHARS = ("a".."z").to_a + ("A".."Z").to_a + ("0".."9").to_a
 
@@ -54,9 +56,9 @@ class Database
     []
   end
 
-  def tree_diff(a, b)
+  def tree_diff(a, b, filter = PathFilter.new)
     diff = TreeDiff.new(self)
-    diff.compare_oids(a, b)
+    diff.compare_oids(a, b, filter)
     diff.changes
   end
 
