@@ -10,6 +10,14 @@ describe Command::Log do
     commit message, time
   end
 
+  def commit_tree(message, files)
+    files.each do |path, contents|
+      write_file path, contents
+    end
+    jit_cmd "add", "."
+    commit message
+  end
+
   describe "with a chain of commits" do
 
     #   o---o---o
@@ -160,6 +168,84 @@ describe Command::Log do
         +++ b/file.txt
         @@ -0,0 +1,1 @@
         +A
+      LOGS
+    end
+  end
+
+  describe "with commits changing different files" do
+    before do
+      commit_tree "first",
+        "a/1.txt"   => "1",
+        "b/c/2.txt" => "2"
+
+      commit_tree "second",
+        "a/1.txt" => "10",
+        "b/3.txt" => "3"
+
+      commit_tree "third",
+        "b/c/2.txt" => "4"
+
+      @commits = ["@^^", "@^", "@"].map { |rev| load_commit(rev) }
+    end
+
+    it "logs commits that change a file" do
+      jit_cmd "log", "--pretty=oneline", "a/1.txt"
+
+      assert_stdout <<~LOGS
+        #{ @commits[1].oid } second
+        #{ @commits[0].oid } first
+      LOGS
+    end
+
+    it "logs commits that change a directory" do
+      jit_cmd "log", "--pretty=oneline", "b"
+
+      assert_stdout <<~LOGS
+        #{ @commits[2].oid } third
+        #{ @commits[1].oid } second
+        #{ @commits[0].oid } first
+      LOGS
+    end
+
+    it "logs commits that change a directory and one of its files" do
+      jit_cmd "log", "--pretty=oneline", "b", "b/3.txt"
+
+      assert_stdout <<~LOGS
+        #{ @commits[2].oid } third
+        #{ @commits[1].oid } second
+        #{ @commits[0].oid } first
+      LOGS
+    end
+
+    it "logs commits that change a nested directory" do
+      jit_cmd "log", "--pretty=oneline", "b/c"
+
+      assert_stdout <<~LOGS
+        #{ @commits[2].oid } third
+        #{ @commits[0].oid } first
+      LOGS
+    end
+
+    it "logs commits with patches for selected files" do
+      jit_cmd "log", "--pretty=oneline", "--patch", "a/1.txt"
+
+      assert_stdout <<~LOGS
+        #{ @commits[1].oid } second
+        diff --git a/a/1.txt b/a/1.txt
+        index 56a6051..9a03714 100644
+        --- a/a/1.txt
+        +++ b/a/1.txt
+        @@ -1,1 +1,1 @@
+        -1
+        +10
+        #{ @commits[0].oid } first
+        diff --git a/a/1.txt b/a/1.txt
+        new file mode 100644
+        index 0000000..56a6051
+        --- /dev/null
+        +++ b/a/1.txt
+        @@ -0,0 +1,1 @@
+        +1
       LOGS
     end
   end
