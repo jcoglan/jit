@@ -127,7 +127,7 @@ module Command
     def show_patch(commit)
       return unless @options[:patch]
 
-      diff  = repo.database.tree_diff(commit.parent, commit.oid)
+      diff  = @rev_list.tree_diff(commit.parent, commit.oid)
       paths = diff.keys.sort_by(&:to_s)
 
       blank_line
