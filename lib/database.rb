@@ -54,8 +54,8 @@ class Database
     []
   end
 
-  def tree_diff(a, b)
-    diff = TreeDiff.new(self)
+  def tree_diff(a, b, prune = [])
+    diff = TreeDiff.new(self, prune)
     diff.compare_oids(a, b)
     diff.changes
   end
