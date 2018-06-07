@@ -55,4 +55,66 @@ describe Command::Merge do
       assert_equal [old_head.oid, merge_head.oid], commit.parents
     end
   end
+
+  describe "multiple common ancestors" do
+
+    #   A   B   C       M1  H   M2
+    #   o---o---o-------o---o---o
+    #        \         /       /
+    #         o---o---o G     /
+    #         D  E \         /
+    #               `-------o
+    #                       F
+
+    before do
+      commit_tree "A", "f.txt" => "1"
+      commit_tree "B", "f.txt" => "2"
+      commit_tree "C", "f.txt" => "3"
+
+      jit_cmd "branch", "topic", "master^"
+      jit_cmd "checkout", "topic"
+      commit_tree "D", "g.txt" => "1"
+      commit_tree "E", "g.txt" => "2"
+      commit_tree "F", "g.txt" => "3"
+
+      jit_cmd "branch", "joiner", "topic^"
+      jit_cmd "checkout", "joiner"
+      commit_tree "G", "h.txt" => "1"
+
+      jit_cmd "checkout", "master"
+    end
+
+    it "performs the first merge" do
+      set_stdin "merge joiner"
+      jit_cmd "merge", "joiner"
+      assert_status 0
+
+      assert_workspace \
+        "f.txt" => "3",
+        "g.txt" => "2",
+        "h.txt" => "1"
+
+      jit_cmd "status", "--porcelain"
+      assert_stdout ""
+    end
+
+    it "performs the second merge" do
+      set_stdin "merge joiner"
+      jit_cmd "merge", "joiner"
+
+      commit_tree "H", "f.txt" => "4"
+
+      set_stdin "merge topic"
+      jit_cmd "merge", "topic"
+      assert_status 0
+
+      assert_workspace \
+        "f.txt" => "4",
+        "g.txt" => "3",
+        "h.txt" => "1"
+
+      jit_cmd "status", "--porcelain"
+      assert_stdout ""
+    end
+  end
 end
