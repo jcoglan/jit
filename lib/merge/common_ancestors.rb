@@ -5,7 +5,7 @@ module Merge
 
     BOTH_PARENTS = Set.new([:parent1, :parent2])
 
-    def initialize(database, one, two)
+    def initialize(database, one, twos)
       @database = database
       @flags    = Hash.new { |hash, oid| hash[oid] = Set.new }
       @queue    = []
@@ -14,8 +14,10 @@ module Merge
       insert_by_date(@queue, @database.load(one))
       @flags[one].add(:parent1)
 
-      insert_by_date(@queue, @database.load(two))
-      @flags[two].add(:parent2)
+      twos.each do |two|
+        insert_by_date(@queue, @database.load(two))
+        @flags[two].add(:parent2)
+      end
     end
 
     def find
@@ -23,14 +25,14 @@ module Merge
       @results.map(&:oid).reject { |oid| marked?(oid, :stale) }
     end
 
+    def marked?(oid, flag)
+      @flags[oid].include?(flag)
+    end
+
     private
 
     def all_stale?
       @queue.all? { |commit| marked?(commit.oid, :stale) }
-    end
-
-    def marked?(oid, flag)
-      @flags[oid].include?(flag)
     end
 
     def process_queue
