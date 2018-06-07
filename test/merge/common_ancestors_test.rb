@@ -1,14 +1,23 @@
 require "minitest/autorun"
 require "graph_helper"
+require "merge/bases"
 require "merge/common_ancestors"
 
 describe Merge::CommonAncestors do
   include GraphHelper
 
   def ancestor(left, right)
-    common  = Merge::CommonAncestors.new(database, @commits[left], @commits[right])
-    commits = common.find.map { |oid| database.load(oid).message }
+    common = Merge::CommonAncestors.new(database, @commits[left], [@commits[right]])
+    get_result(common)
+  end
 
+  def merge_base(left, right)
+    bases = Merge::Bases.new(database, @commits[left], @commits[right])
+    get_result(bases)
+  end
+
+  def get_result(common)
+    commits = common.find.map { |oid| database.load(oid).message }
     commits.size == 1 ? commits.first : commits
   end
 
@@ -109,6 +118,30 @@ describe Merge::CommonAncestors do
     end
   end
 
+  describe "with a merge further from one parent" do
+
+    #   A   B   C   G   H   J
+    #   o---o---o---o---o---o
+    #        \     /
+    #         o---o---o
+    #         D   E   F
+
+    before do
+      chain  [nil, "A", "B", "C"]
+      chain  ["B", "D", "E", "F"]
+      commit ["C", "E"], "G"
+      chain  ["G", "H", "J"]
+    end
+
+    it "finds all the common ancestors" do
+      assert_equal ["E", "B"], ancestor("J", "F")
+    end
+
+    it "finds the best common ancestor" do
+      assert_equal "E", merge_base("J", "F")
+    end
+  end
+
   describe "with commits between the common ancestor and the merge" do
 
     #   A   B   C       H   J
@@ -128,6 +161,10 @@ describe Merge::CommonAncestors do
 
     it "finds all the common ancestors" do
       assert_equal ["B", "E"], ancestor("J", "F")
+    end
+
+    it "finds the best common ancestor" do
+      assert_equal "E", merge_base("J", "F")
     end
   end
 
@@ -155,6 +192,47 @@ describe Merge::CommonAncestors do
     it "finds the best common ancestor" do
       assert_equal "E", ancestor("J", "F")
       assert_equal "E", ancestor("F", "J")
+    end
+  end
+
+  describe "with many common ancestors" do
+
+    #         L   M   N   P   Q   R   S   T
+    #         o---o---o---o---o---o---o---o
+    #        /       /       /       /
+    #   o---o---o...o---o...o---o---o---o---o
+    #   A   B  C \  D  E \  F  G \  H   J   K
+    #             \       \       \
+    #              o---o---o---o---o---o
+    #              U   V   W   X   Y   Z
+
+    before do
+      chain  [nil, "A", "B", "C"] + (1..4).map { |n| "pad-1-#{n}" } +
+             ["D", "E"] +           (1..4).map { |n| "pad-2-#{n}" } +
+             ["F", "G"] +
+             ["H", "J", "K"]
+
+      chain  ["B", "L", "M"]
+      commit ["M", "D"], "N"
+      chain  ["N", "P"]
+      commit ["P", "F"], "Q"
+      chain  ["Q", "R"]
+      commit ["R", "H"], "S"
+      chain  ["S", "T"]
+
+      chain  ["C", "U", "V"]
+      commit ["V", "E"], "W"
+      chain  ["W", "X"]
+      commit ["X", "G"], "Y"
+      chain  ["Y", "Z"]
+    end
+
+    it "finds multiple candidate common ancestors" do
+      assert_equal ["G", "D", "B"], ancestor("T", "Z")
+    end
+
+    it "finds the best common ancestor" do
+      assert_equal "G", merge_base("T", "Z")
     end
   end
 end
