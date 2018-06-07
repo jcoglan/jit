@@ -17,11 +17,11 @@ describe Merge::CommonAncestors do
     @database ||= Database.new(db_path)
   end
 
-  def commit(parent, message)
+  def commit(parents, message)
     @commits ||= {}
     @time    ||= Time.now
 
-    parents = [@commits[parent]]
+    parents = parents.map { |oid| @commits[oid] }
     author  = Database::Author.new("A. U. Thor", "author@example.com", @time)
     commit  = Database::Commit.new(parents, "0" * 40, author, message)
 
@@ -30,12 +30,14 @@ describe Merge::CommonAncestors do
   end
 
   def chain(names)
-    names.each_cons(2) { |parent, message| commit(parent, message) }
+    names.each_cons(2) { |parent, message| commit([*parent], message) }
   end
 
   def ancestor(left, right)
-    common = Merge::CommonAncestors.new(database, @commits[left], @commits[right])
-    database.load(common.find).message
+    common  = Merge::CommonAncestors.new(database, @commits[left], @commits[right])
+    commits = common.find.map { |oid| database.load(oid).message }
+
+    commits.size == 1 ? commits.first : commits
   end
 
   describe "with a linear history" do
@@ -107,6 +109,80 @@ describe Merge::CommonAncestors do
 
     it "finds a root commit" do
       assert_equal "A", ancestor("J", "A")
+    end
+  end
+
+  describe "with a merge" do
+
+    #   A   B   C   G   H
+    #   o---o---o---o---o
+    #        \     /
+    #         o---o---o
+    #         D   E   F
+
+    before do
+      chain  [nil, "A", "B", "C"]
+      chain  ["B", "D", "E", "F"]
+      commit ["C", "E"], "G"
+      chain  ["G", "H"]
+    end
+
+    it "finds the most recent common ancestor" do
+      assert_equal "E", ancestor("H", "F")
+    end
+
+    it "finds the common ancestor of a merge and its parents" do
+      assert_equal "C", ancestor("C", "G")
+      assert_equal "E", ancestor("G", "E")
+    end
+  end
+
+  describe "with commits between the common ancestor and the merge" do
+
+    #   A   B   C       H   J
+    #   o---o---o-------o---o
+    #        \         /
+    #         o---o---o G
+    #         D  E \
+    #               o F
+
+    before do
+      chain  [nil, "A", "B", "C"]
+      chain  ["B", "D", "E", "F"]
+      chain  ["E", "G"]
+      commit ["C", "G"], "H"
+      chain  ["H", "J"]
+    end
+
+    it "finds all the common ancestors" do
+      assert_equal ["B", "E"], ancestor("J", "F")
+    end
+  end
+
+  describe "with enough history to find all stale results" do
+
+    #   A   B   C             H   J
+    #   o---o---o-------------o---o
+    #        \      E        /
+    #         o-----o-------o
+    #        D \     \     / G
+    #           \     o   /
+    #            \    F  /
+    #             o-----o
+    #             P     Q
+
+    before do
+      chain  [nil, "A", "B", "C"]
+      chain  ["B", "D", "E", "F"]
+      chain  ["D", "P", "Q"]
+      commit ["E", "Q"], "G"
+      commit ["C", "G"], "H"
+      chain  ["H", "J"]
+    end
+
+    it "finds the best common ancestor" do
+      assert_equal "E", ancestor("J", "F")
+      assert_equal "E", ancestor("F", "J")
     end
   end
 end
