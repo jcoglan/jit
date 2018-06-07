@@ -4,31 +4,35 @@ class Database
   class Commit
 
     attr_accessor :oid
-    attr_reader :parent, :tree, :author, :message
+    attr_reader :parents, :tree, :author, :message
 
     def self.parse(scanner)
-      headers = {}
+      headers = Hash.new { |hash, key| hash[key] = [] }
 
       loop do
         line = scanner.scan_until(/\n/).strip
         break if line == ""
 
         key, value = line.split(/ +/, 2)
-        headers[key] = value
+        headers[key].push(value)
       end
 
       Commit.new(
         headers["parent"],
-        headers["tree"],
-        Author.parse(headers["author"]),
+        headers["tree"].first,
+        Author.parse(headers["author"].first),
         scanner.rest)
     end
 
-    def initialize(parent, tree, author, message)
-      @parent  = parent
+    def initialize(parents, tree, author, message)
+      @parents = parents
       @tree    = tree
       @author  = author
       @message = message
+    end
+
+    def parent
+      @parents.first
     end
 
     def date
@@ -47,7 +51,7 @@ class Database
       lines = []
 
       lines.push("tree #{ @tree }")
-      lines.push("parent #{ @parent }") if @parent
+      lines.concat(@parents.map { |oid| "parent #{ oid }" })
       lines.push("author #{ @author }")
       lines.push("committer #{ @author }")
       lines.push("")
