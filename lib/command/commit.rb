@@ -16,7 +16,7 @@ module Command
       author  = Database::Author.new(name, email, Time.now)
       message = @stdin.read
 
-      commit = Database::Commit.new(parent, root.oid, author, message)
+      commit = Database::Commit.new([*parent], root.oid, author, message)
       repo.database.store(commit)
       repo.refs.update_head(commit.oid)
 

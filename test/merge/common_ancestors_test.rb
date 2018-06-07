@@ -21,8 +21,9 @@ describe Merge::CommonAncestors do
     @commits ||= {}
     @time    ||= Time.now
 
-    author = Database::Author.new("A. U. Thor", "author@example.com", @time)
-    commit = Database::Commit.new(@commits[parent], "0" * 40, author, message)
+    parents = [@commits[parent]]
+    author  = Database::Author.new("A. U. Thor", "author@example.com", @time)
+    commit  = Database::Commit.new(parents, "0" * 40, author, message)
 
     database.store(commit)
     @commits[message] = commit.oid
