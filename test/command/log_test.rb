@@ -10,12 +10,12 @@ describe Command::Log do
     commit message, time
   end
 
-  def commit_tree(message, files)
+  def commit_tree(message, files, time = nil)
     files.each do |path, contents|
       write_file path, contents
     end
     jit_cmd "add", "."
-    commit message
+    commit message, time
   end
 
   describe "with a chain of commits" do
@@ -313,6 +313,52 @@ describe Command::Log do
         #{ @topic[0] } topic-4
         #{ @topic[1] } topic-3
         #{ @topic[2] } topic-2
+      LOGS
+    end
+  end
+
+  describe "with a graph of commits" do
+
+    #   A   B   C   D   J   K
+    #   o---o---o---o---o---o [master]
+    #        \         /
+    #         o---o---o---o [topic]
+    #         E   F   G   H
+
+    before do
+      time = Time.now
+
+      ("A".."B").each { |n| commit_tree n, { "f.txt" => n }, time }
+      ("C".."D").each { |n| commit_tree n, { "f.txt" => n }, time + 1 }
+
+      jit_cmd "branch", "topic", "master~2"
+      jit_cmd "checkout", "topic"
+
+      ("E".."H").each { |n| commit_tree n, { "g.txt" => n }, time + 2 }
+
+      jit_cmd "checkout", "master"
+      set_stdin "J"
+      jit_cmd "merge", "topic^"
+
+      commit_tree "K", { "f.txt" => "K" }, time + 3
+
+      @master = (0..5).map { |n| resolve_revision("master~#{n}") }
+      @topic  = (0..3).map { |n| resolve_revision("topic~#{n}") }
+    end
+
+    it "logs concurrent branches leading to a merge" do
+      jit_cmd "log", "--pretty=oneline"
+
+      assert_stdout <<~LOGS
+        #{ @master[0] } K
+        #{ @master[1] } J
+        #{ @topic[1]  } G
+        #{ @topic[2]  } F
+        #{ @topic[3]  } E
+        #{ @master[2] } D
+        #{ @master[3] } C
+        #{ @master[4] } B
+        #{ @master[5] } A
       LOGS
     end
   end

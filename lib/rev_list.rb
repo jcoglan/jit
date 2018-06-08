@@ -98,15 +98,15 @@ class RevList
   def add_parents(commit)
     return unless mark(commit.oid, :added)
 
-    parent = load_commit(commit.parent)
+    parents = commit.parents.map { |oid| load_commit(oid) }
 
     if marked?(commit.oid, :uninteresting)
-      mark_parents_uninteresting(parent) if parent
+      parents.each { |parent| mark_parents_uninteresting(parent) }
     else
       simplify_commit(commit)
     end
 
-    enqueue_commit(parent) if parent
+    parents.each { |parent| enqueue_commit(parent) }
   end
 
   def mark_parents_uninteresting(commit)
