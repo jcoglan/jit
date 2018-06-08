@@ -125,7 +125,7 @@ module Command
     end
 
     def show_patch(commit)
-      return unless @options[:patch]
+      return unless @options[:patch] and commit.parents.size <= 1
 
       blank_line
       print_commit_diff(commit.parent, commit.oid, @rev_list)
