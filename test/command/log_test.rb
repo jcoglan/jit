@@ -371,5 +371,13 @@ describe Command::Log do
         #{ @master[5] } A
       LOGS
     end
+
+    it "logs unmerged commits on a branch" do
+      jit_cmd "log", "--pretty=oneline", "master..topic"
+
+      assert_stdout <<~LOGS
+        #{ @topic[0] } H
+      LOGS
+    end
   end
 end

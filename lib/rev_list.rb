@@ -113,9 +113,14 @@ class RevList
   end
 
   def mark_parents_uninteresting(commit)
-    while commit&.parent
-      break unless mark(commit.parent, :uninteresting)
-      commit = @commits[commit.parent]
+    queue = commit.parents.clone
+
+    until queue.empty?
+      oid = queue.shift
+      next unless mark(oid, :uninteresting)
+
+      commit = @commits[oid]
+      queue.concat(commit.parents) if commit
     end
   end
 
