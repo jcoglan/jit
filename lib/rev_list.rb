@@ -129,7 +129,13 @@ class RevList
 
   def simplify_commit(commit)
     return if @prune.empty?
-    mark(commit.oid, :treesame) if tree_diff(commit.parent, commit.oid).empty?
+
+    parents = commit.parents
+    parents = [nil] if parents.empty?
+
+    parents.each do |oid|
+      mark(commit.oid, :treesame) if tree_diff(oid, commit.oid).empty?
+    end
   end
 
   def traverse_commits

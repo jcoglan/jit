@@ -393,5 +393,15 @@ describe Command::Log do
         +D
       LOGS
     end
+
+    it "does not list merges with treesame parents for prune paths" do
+      jit_cmd "log", "--pretty=oneline", "g.txt"
+
+      assert_stdout <<~LOGS
+        #{ @topic[1] } G
+        #{ @topic[2] } F
+        #{ @topic[3] } E
+      LOGS
+    end
   end
 end
