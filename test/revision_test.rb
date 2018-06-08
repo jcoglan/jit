@@ -29,7 +29,7 @@ describe Revision do
 
     it "parses a parent ref" do
       assert_parse "HEAD^",
-        Revision::Parent.new(Revision::Ref.new("HEAD"))
+        Revision::Parent.new(Revision::Ref.new("HEAD"), 1)
     end
 
     it "parses a chain of parent refs" do
@@ -37,7 +37,15 @@ describe Revision do
         Revision::Parent.new(
           Revision::Parent.new(
             Revision::Parent.new(
-              Revision::Ref.new("master"))))
+              Revision::Ref.new("master"),
+              1),
+            1),
+          1)
+    end
+
+    it "parses a parent ref with a number" do
+      assert_parse "@^2",
+        Revision::Parent.new(Revision::Ref.new("HEAD"), 2)
     end
 
     it "parses an ancestor ref" do
@@ -54,7 +62,9 @@ describe Revision do
             Revision::Parent.new(
               Revision::Ancestor.new(
                 Revision::Ref.new("HEAD"),
-                2))),
+                2),
+              1),
+            1),
           3)
     end
   end
