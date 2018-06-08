@@ -8,9 +8,9 @@ class Revision
     end
   end
 
-  Parent = Struct.new(:rev) do
+  Parent = Struct.new(:rev, :n) do
     def resolve(context)
-      context.commit_parent(rev.resolve(context))
+      context.commit_parent(rev.resolve(context), n)
     end
   end
 
@@ -33,7 +33,7 @@ class Revision
     | [\x00-\x20*:?\[\\^~\x7f]
     /x
 
-  PARENT   = /^(.+)\^$/
+  PARENT   = /^(.+)\^(\d*)$/
   ANCESTOR = /^(.+)~(\d+)$/
 
   HEAD = "HEAD"
@@ -47,7 +47,8 @@ class Revision
   def self.parse(revision)
     if match = PARENT.match(revision)
       rev = Revision.parse(match[1])
-      rev ? Parent.new(rev) : nil
+      n = (match[2] == "") ? 1 : match[2].to_i
+      rev ? Parent.new(rev, n) : nil
     elsif match = ANCESTOR.match(revision)
       rev = Revision.parse(match[1])
       rev ? Ancestor.new(rev, match[2].to_i) : nil
@@ -93,11 +94,13 @@ class Revision
     nil
   end
 
-  def commit_parent(oid)
+  def commit_parent(oid, n = 1)
     return nil unless oid
 
     commit = load_typed_object(oid, COMMIT)
-    commit&.parent
+    return nil unless commit
+
+    commit.parents[n - 1]
   end
 
   private
