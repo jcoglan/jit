@@ -328,7 +328,9 @@ describe Command::Log do
     before do
       time = Time.now
 
-      ("A".."B").each { |n| commit_tree n, { "f.txt" => n }, time }
+      commit_tree "A", { "f.txt" => "0", "g.txt" => "0" }, time
+      commit_tree "B", { "f.txt" => "B" }, time
+
       ("C".."D").each { |n| commit_tree n, { "f.txt" => n }, time + 1 }
 
       jit_cmd "branch", "topic", "master~2"
@@ -398,10 +400,38 @@ describe Command::Log do
       jit_cmd "log", "--pretty=oneline", "g.txt"
 
       assert_stdout <<~LOGS
-        #{ @topic[1] } G
-        #{ @topic[2] } F
-        #{ @topic[3] } E
+        #{ @topic[1]  } G
+        #{ @topic[2]  } F
+        #{ @topic[3]  } E
+        #{ @master[5] } A
       LOGS
+    end
+
+    describe "with changes that are undone on a branch leading to a merge" do
+      before do
+        time = Time.now
+
+        jit_cmd "branch", "aba", "master~4"
+        jit_cmd "checkout", "aba"
+
+        ["C", "0"].each { |n| commit_tree n, { "g.txt" => n }, time + 1 }
+
+        set_stdin "J"
+        jit_cmd "merge", "topic^"
+
+        commit_tree "K", { "f.txt" => "K" }, time + 3
+      end
+
+      it "does not list commits on the filtered branch" do
+        jit_cmd "log", "--pretty=oneline", "g.txt"
+
+        assert_stdout <<~LOGS
+          #{ @topic[1]  } G
+          #{ @topic[2]  } F
+          #{ @topic[3]  } E
+          #{ @master[5] } A
+        LOGS
+      end
     end
   end
 end
