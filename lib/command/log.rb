@@ -125,7 +125,7 @@ module Command
     end
 
     def show_patch(commit)
-      return unless @options[:patch]
+      return unless @options[:patch] and commit.parents.size <= 1
 
       diff  = @rev_list.tree_diff(commit.parent, commit.oid)
       paths = diff.keys.sort_by(&:to_s)
