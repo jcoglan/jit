@@ -1,0 +1,30 @@
+require_relative "./bases"
+require_relative "../revision"
+
+module Merge
+  class Inputs
+
+    attr_reader :left_name, :right_name,
+                :left_oid, :right_oid,
+                :base_oids
+
+    def initialize(repository, left_name, right_name)
+      @repo       = repository
+      @left_name  = left_name
+      @right_name = right_name
+
+      @left_oid  = resolve_rev(@left_name)
+      @right_oid = resolve_rev(@right_name)
+
+      common     = Bases.new(@repo.database, @left_oid, @right_oid)
+      @base_oids = common.find
+    end
+
+    private
+
+    def resolve_rev(rev)
+      Revision.new(@repo, rev).resolve(Revision::COMMIT)
+    end
+
+  end
+end
