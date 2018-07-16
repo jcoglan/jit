@@ -1,6 +1,7 @@
 require_relative "./base"
 require_relative "./shared/write_commit"
-require_relative "../merge/bases"
+require_relative "../merge/inputs"
+require_relative "../merge/resolve"
 require_relative "../revision"
 
 module Command
@@ -9,25 +10,27 @@ module Command
     include WriteCommit
 
     def run
-      head_oid  = repo.refs.read_head
-      revision  = Revision.new(repo, @args[0])
-      merge_oid = revision.resolve(Revision::COMMIT)
+      @inputs = ::Merge::Inputs.new(repo, Revision::HEAD, @args[0])
+      resolve_merge
+      commit_merge
+      exit 0
+    end
 
-      common   = ::Merge::Bases.new(repo.database, head_oid, merge_oid)
-      base_oid = common.find.first
+    private
 
+    def resolve_merge
       repo.index.load_for_update
 
-      tree_diff = repo.database.tree_diff(base_oid, merge_oid)
-      migration = repo.migration(tree_diff)
-      migration.apply_changes
+      merge = ::Merge::Resolve.new(repo, @inputs)
+      merge.execute
 
       repo.index.write_updates
+    end
 
+    def commit_merge
+      parents = [@inputs.left_oid, @inputs.right_oid]
       message = @stdin.read
-      write_commit([head_oid, merge_oid], message)
-
-      exit 0
+      write_commit(parents, message)
     end
 
   end
