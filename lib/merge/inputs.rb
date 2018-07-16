@@ -20,6 +20,10 @@ module Merge
       @base_oids = common.find
     end
 
+    def already_merged?
+      @base_oids == [@right_oid]
+    end
+
     private
 
     def resolve_rev(rev)

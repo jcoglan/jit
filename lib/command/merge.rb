@@ -11,8 +11,11 @@ module Command
 
     def run
       @inputs = ::Merge::Inputs.new(repo, Revision::HEAD, @args[0])
+      handle_merged_ancestor if @inputs.already_merged?
+
       resolve_merge
       commit_merge
+
       exit 0
     end
 
@@ -31,6 +34,11 @@ module Command
       parents = [@inputs.left_oid, @inputs.right_oid]
       message = @stdin.read
       write_commit(parents, message)
+    end
+
+    def handle_merged_ancestor
+      puts "Already up to date."
+      exit 0
     end
 
   end
