@@ -34,6 +34,36 @@ describe Command::Merge do
     end
   end
 
+  describe "fast-forward merge" do
+    before do
+      commit_tree "A", "f.txt" => "1"
+      commit_tree "B", "f.txt" => "2"
+      commit_tree "C", "f.txt" => "3"
+
+      jit_cmd "branch", "topic", "@^^"
+      jit_cmd "checkout", "topic"
+
+      set_stdin "M"
+      jit_cmd "merge", "master"
+    end
+
+    it "prints the fast-forward message" do
+      a, b = ["master^^", "master"].map { |rev| resolve_revision(rev) }
+      assert_stdout <<~MSG
+        Updating #{ repo.database.short_oid(a) }..#{ repo.database.short_oid(b) }
+        Fast-forward
+      MSG
+    end
+
+    it "updates the current branch HEAD" do
+      commit = load_commit("@")
+      assert_equal "C", commit.message
+
+      jit_cmd "status", "--porcelain"
+      assert_stdout ""
+    end
+  end
+
   describe "unconflicted merge with two files" do
 
     #   A   B   M

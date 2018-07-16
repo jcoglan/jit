@@ -24,6 +24,10 @@ module Merge
       @base_oids == [@right_oid]
     end
 
+    def fast_forward?
+      @base_oids == [@left_oid]
+    end
+
     private
 
     def resolve_rev(rev)
