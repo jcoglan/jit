@@ -12,6 +12,28 @@ describe Command::Merge do
     commit message
   end
 
+  describe "merging an ancestor" do
+    before do
+      commit_tree "A", "f.txt" => "1"
+      commit_tree "B", "f.txt" => "2"
+      commit_tree "C", "f.txt" => "3"
+
+      jit_cmd "merge", "@^"
+    end
+
+    it "prints the up-to-date message" do
+      assert_stdout "Already up to date.\n"
+    end
+
+    it "does not change the repository state" do
+      commit = load_commit("@")
+      assert_equal "C", commit.message
+
+      jit_cmd "status", "--porcelain"
+      assert_stdout ""
+    end
+  end
+
   describe "unconflicted merge with two files" do
 
     #   A   B   M
