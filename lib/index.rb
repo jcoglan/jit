@@ -83,11 +83,11 @@ class Index
   end
 
   def entry_for_path(path)
-    @entries[path.to_s]
+    @entries[[path.to_s, 0]]
   end
 
   def tracked_file?(path)
-    @entries.has_key?(path.to_s)
+    (0..3).any? { |stage| @entries.has_key?([path.to_s, stage]) }
   end
 
   def tracked?(path)
@@ -111,7 +111,11 @@ class Index
   end
 
   def remove_entry(pathname)
-    entry = @entries[pathname.to_s]
+    (0..3).each { |stage| remove_entry_with_stage(pathname, stage) }
+  end
+
+  def remove_entry_with_stage(pathname, stage)
+    entry = @entries[[pathname.to_s, stage]]
     return unless entry
 
     @keys.delete(entry.key)
