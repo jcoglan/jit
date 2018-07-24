@@ -6,10 +6,61 @@ describe Command::Merge do
 
   def commit_tree(message, files)
     files.each do |path, contents|
-      write_file path, contents
+      delete(path) unless contents == :x
+      case contents
+      when String then write_file(path, contents)
+      when :x     then make_executable(path)
+      when Array
+        write_file(path, contents[0])
+        make_executable(path)
+      end
     end
+    delete ".git/index"
     jit_cmd "add", "."
     commit message
+  end
+
+  #   A   B   M
+  #   o---o---o [master]
+  #    \     /
+  #     `---o [topic]
+  #         C
+  #
+  def merge3(base, left, right)
+    commit_tree "A", base
+    commit_tree "B", left
+
+    jit_cmd "branch", "topic", "master^"
+    jit_cmd "checkout", "topic"
+    commit_tree "C", right
+
+    jit_cmd "checkout", "master"
+    set_stdin "M"
+    jit_cmd "merge", "topic"
+  end
+
+  def assert_clean_merge
+    jit_cmd "status", "--porcelain"
+    assert_stdout ""
+
+    commit     = load_commit("@")
+    old_head   = load_commit("@^")
+    merge_head = load_commit("topic")
+
+    assert_equal "M", commit.message
+    assert_equal [old_head.oid, merge_head.oid], commit.parents
+  end
+
+  def assert_no_merge
+    commit = load_commit("@")
+    assert_equal "B", commit.message
+    assert_equal 1, commit.parents.size
+  end
+
+  def assert_index(*entries)
+    repo.index.load
+    actual = repo.index.each_entry.map { |e| [e.path, e.stage] }
+    assert_equal entries, actual
   end
 
   describe "merging an ancestor" do
@@ -65,27 +116,11 @@ describe Command::Merge do
   end
 
   describe "unconflicted merge with two files" do
-
-    #   A   B   M
-    #   o---o---o
-    #    \     /
-    #     `---o
-    #         C
-
     before do
-      commit_tree "root",
-        "f.txt" => "1",
-        "g.txt" => "1"
-
-      jit_cmd "branch", "topic"
-      jit_cmd "checkout", "topic"
-      commit_tree "right", "g.txt" => "2"
-
-      jit_cmd "checkout", "master"
-      commit_tree "left", "f.txt" => "2"
-
-      set_stdin "merge topic branch"
-      jit_cmd "merge", "topic"
+      merge3(
+        { "f.txt" => "1", "g.txt" => "1" },
+        { "f.txt" => "2"                 },
+        {                 "g.txt" => "2" })
     end
 
     it "puts the combined changes in the workspace" do
@@ -94,17 +129,283 @@ describe Command::Merge do
         "g.txt" => "2"
     end
 
-    it "leaves the status clean" do
-      jit_cmd "status", "--porcelain"
-      assert_stdout ""
+    it "creates a clean merge" do
+      assert_clean_merge
+    end
+  end
+
+  describe "unconflicted merge with a deleted file" do
+    before do
+      merge3(
+        { "f.txt" => "1", "g.txt" => "1" },
+        { "f.txt" => "2"                 },
+        {                 "g.txt" => nil })
     end
 
-    it "writes a commit with the old HEAD and the merged commit as parents" do
-      commit     = load_commit("@")
-      old_head   = load_commit("@^")
-      merge_head = load_commit("topic")
+    it "puts the combined changes in the workspace" do
+      assert_workspace "f.txt" => "2"
+    end
 
-      assert_equal [old_head.oid, merge_head.oid], commit.parents
+    it "creates a clean merge" do
+      assert_clean_merge
+    end
+  end
+
+  describe "unconflicted merge: same addition on both sides" do
+    before do
+      merge3(
+        { "f.txt" => "1" },
+        { "g.txt" => "2" },
+        { "g.txt" => "2" })
+    end
+
+    it "puts the combined changes in the workspace" do
+      assert_workspace \
+        "f.txt" => "1",
+        "g.txt" => "2"
+    end
+
+    it "creates a clean merge" do
+      assert_clean_merge
+    end
+  end
+
+  describe "unconflicted merge: same edit on both sides" do
+    before do
+      merge3(
+        { "f.txt" => "1" },
+        { "f.txt" => "2" },
+        { "f.txt" => "2" })
+    end
+
+    it "puts the combined changes in the workspace" do
+      assert_workspace "f.txt" => "2"
+    end
+
+    it "creates a clean merge" do
+      assert_clean_merge
+    end
+  end
+
+  describe "unconflicted merge: edit and mode-change" do
+    before do
+      merge3(
+        { "f.txt" => "1" },
+        { "f.txt" => "2" },
+        { "f.txt" => :x  })
+    end
+
+    it "puts the combined changes in the workspace" do
+      assert_workspace "f.txt" => "2"
+      assert_executable "f.txt"
+    end
+
+    it "creates a clean merge" do
+      assert_clean_merge
+    end
+  end
+
+  describe "unconflicted merge: mode-change and edit" do
+    before do
+      merge3(
+        { "f.txt" => "1" },
+        { "f.txt" => :x  },
+        { "f.txt" => "3" })
+    end
+
+    it "puts the combined changes in the workspace" do
+      assert_workspace "f.txt" => "3"
+      assert_executable "f.txt"
+    end
+
+    it "creates a clean merge" do
+      assert_clean_merge
+    end
+  end
+
+  describe "unconflicted merge: same deletion on both sides" do
+    before do
+      merge3(
+        { "f.txt" => "1", "g.txt" => "1" },
+        {                 "g.txt" => nil },
+        {                 "g.txt" => nil })
+    end
+
+    it "puts the combined changes in the workspace" do
+      assert_workspace "f.txt" => "1"
+    end
+
+    it "creates a clean merge" do
+      assert_clean_merge
+    end
+  end
+
+  describe "unconflicted merge: delete-add-parent" do
+    before do
+      merge3(
+        { "nest/f.txt" => "1" },
+        { "nest/f.txt" => nil },
+        { "nest"       => "3" })
+    end
+
+    it "puts the combined changes in the workspace" do
+      assert_workspace "nest" => "3"
+    end
+
+    it "creates a clean merge" do
+      assert_clean_merge
+    end
+  end
+
+  describe "unconflicted merge: delete-add-child" do
+    before do
+      merge3(
+        { "nest/f.txt" => "1" },
+        { "nest/f.txt" => nil },
+        { "nest/f.txt" => nil, "nest/f.txt/g.txt" => "3" })
+    end
+
+    it "puts the combined changes in the workspace" do
+      assert_workspace "nest/f.txt/g.txt" => "3"
+    end
+
+    it "creates a clean merge" do
+      assert_clean_merge
+    end
+  end
+
+  describe "conflicted merge: add-add" do
+    before do
+      merge3(
+        { "f.txt" => "1"   },
+        { "g.txt" => "2\n" },
+        { "g.txt" => "3\n" })
+    end
+
+    it "puts the conflicted file in the workspace" do
+      assert_workspace \
+        "f.txt" => "1",
+        "g.txt" => <<~FILE
+          <<<<<<< HEAD
+          2
+          =======
+          3
+          >>>>>>> topic
+        FILE
+    end
+
+    it "records the conflict in the index" do
+      assert_index \
+        ["f.txt", 0],
+        ["g.txt", 2],
+        ["g.txt", 3]
+    end
+
+    it "does not write a merge commit" do
+      assert_no_merge
+    end
+  end
+
+  describe "conflicted merge: add-add mode conflict" do
+    before do
+      merge3(
+        { "f.txt" => "1"   },
+        { "g.txt" => "2"   },
+        { "g.txt" => ["2"] })
+    end
+
+    it "puts the conflicted file in the workspace" do
+      assert_workspace \
+        "f.txt" => "1",
+        "g.txt" => "2"
+    end
+
+    it "records the conflict in the index" do
+      assert_index \
+        ["f.txt", 0],
+        ["g.txt", 2],
+        ["g.txt", 3]
+    end
+
+    it "does not write a merge commit" do
+      assert_no_merge
+    end
+  end
+
+  describe "conflicted merge: edit-edit" do
+    before do
+      merge3(
+        { "f.txt" => "1\n" },
+        { "f.txt" => "2\n" },
+        { "f.txt" => "3\n" })
+    end
+
+    it "puts the conflicted file in the workspace" do
+      assert_workspace \
+        "f.txt" => <<~FILE
+          <<<<<<< HEAD
+          2
+          =======
+          3
+          >>>>>>> topic
+        FILE
+    end
+
+    it "records the conflict in the index" do
+      assert_index \
+        ["f.txt", 1],
+        ["f.txt", 2],
+        ["f.txt", 3]
+    end
+
+    it "does not write a merge commit" do
+      assert_no_merge
+    end
+  end
+
+  describe "conflicted merge: edit-delete" do
+    before do
+      merge3(
+        { "f.txt" => "1" },
+        { "f.txt" => "2" },
+        { "f.txt" => nil })
+    end
+
+    it "puts the left version in the workspace" do
+      assert_workspace "f.txt" => "2"
+    end
+
+    it "records the conflict in the index" do
+      assert_index \
+        ["f.txt", 1],
+        ["f.txt", 2]
+    end
+
+    it "does not write a merge commit" do
+      assert_no_merge
+    end
+  end
+
+  describe "conflicted merge: delete-edit" do
+    before do
+      merge3(
+        { "f.txt" => "1" },
+        { "f.txt" => nil },
+        { "f.txt" => "3" })
+    end
+
+    it "puts the right version in the workspace" do
+      assert_workspace "f.txt" => "3"
+    end
+
+    it "records the conflict in the index" do
+      assert_index \
+        ["f.txt", 1],
+        ["f.txt", 3]
+    end
+
+    it "does not write a merge commit" do
+      assert_no_merge
     end
   end
 
