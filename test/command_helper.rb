@@ -109,4 +109,8 @@ module CommandHelper
   def assert_noent(filename)
     refute File.exist?(repo_path.join(filename))
   end
+
+  def assert_executable(filename)
+    assert File.executable?(repo_path.join(filename))
+  end
 end
