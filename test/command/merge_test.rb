@@ -332,6 +332,60 @@ describe Command::Merge do
     end
   end
 
+  describe "conflicted merge: file/directory addition" do
+    before do
+      merge3(
+        { "f.txt"            => "1" },
+        { "g.txt"            => "2" },
+        { "g.txt/nested.txt" => "3" })
+    end
+
+    it "puts a namespaced copy of the conflicted file in the workspace" do
+      assert_workspace \
+        "f.txt"            => "1",
+        "g.txt~HEAD"       => "2",
+        "g.txt/nested.txt" => "3"
+    end
+
+    it "records the conflict in the index" do
+      assert_index \
+        ["f.txt", 0],
+        ["g.txt", 2],
+        ["g.txt/nested.txt", 0]
+    end
+
+    it "does not write a merge commit" do
+      assert_no_merge
+    end
+  end
+
+  describe "conflicted merge: directory/file addition" do
+    before do
+      merge3(
+        { "f.txt"            => "1" },
+        { "g.txt/nested.txt" => "2" },
+        { "g.txt"            => "3" })
+    end
+
+    it "puts a namespaced copy of the conflicted file in the workspace" do
+      assert_workspace \
+        "f.txt"            => "1",
+        "g.txt~topic"      => "3",
+        "g.txt/nested.txt" => "2"
+    end
+
+    it "records the conflict in the index" do
+      assert_index \
+        ["f.txt", 0],
+        ["g.txt", 3],
+        ["g.txt/nested.txt", 0]
+    end
+
+    it "does not write a merge commit" do
+      assert_no_merge
+    end
+  end
+
   describe "conflicted merge: edit-edit" do
     before do
       merge3(
@@ -402,6 +456,58 @@ describe Command::Merge do
       assert_index \
         ["f.txt", 1],
         ["f.txt", 3]
+    end
+
+    it "does not write a merge commit" do
+      assert_no_merge
+    end
+  end
+
+  describe "conflicted merge: edit-add-parent" do
+    before do
+      merge3(
+        { "nest/f.txt" => "1" },
+        { "nest/f.txt" => "2" },
+        { "nest"       => "3" })
+    end
+
+    it "puts a namespaced copy of the conflicted file in the workspace" do
+      assert_workspace \
+        "nest/f.txt" => "2",
+        "nest~topic" => "3"
+    end
+
+    it "records the conflict in the index" do
+      assert_index \
+        ["nest", 3],
+        ["nest/f.txt", 1],
+        ["nest/f.txt", 2]
+    end
+
+    it "does not write a merge commit" do
+      assert_no_merge
+    end
+  end
+
+  describe "conflicted merge: edit-add-child" do
+    before do
+      merge3(
+        { "nest/f.txt" => "1" },
+        { "nest/f.txt" => "2" },
+        { "nest/f.txt" => nil, "nest/f.txt/g.txt" => "3" })
+    end
+
+    it "puts a namespaced copy of the conflicted file in the workspace" do
+      assert_workspace \
+        "nest/f.txt~HEAD"  => "2",
+        "nest/f.txt/g.txt" => "3"
+    end
+
+    it "records the conflict in the index" do
+      assert_index \
+        ["nest/f.txt", 1], # missing
+        ["nest/f.txt", 2],
+        ["nest/f.txt/g.txt", 0]
     end
 
     it "does not write a merge commit" do
