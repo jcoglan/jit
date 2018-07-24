@@ -13,6 +13,7 @@ module Merge
       migration.apply_changes
 
       add_conflicts_to_index
+      write_untracked_files
     end
 
     private
@@ -23,13 +24,21 @@ module Merge
       @right_diff = @repo.database.tree_diff(base_oid, @inputs.right_oid)
       @clean_diff = {}
       @conflicts  = {}
+      @untracked  = {}
 
       @right_diff.each do |path, (old_item, new_item)|
+        file_dir_conflict(path, @left_diff, @inputs.left_name) if new_item
         same_path_conflict(path, old_item, new_item)
+      end
+
+      @left_diff.each do |path, (_, new_item)|
+        file_dir_conflict(path, @right_diff, @inputs.right_name) if new_item
       end
     end
 
     def same_path_conflict(path, base, right)
+      return if @conflicts[path]
+
       unless @left_diff.has_key?(path)
         @clean_diff[path] = [base, right]
         return
@@ -82,9 +91,32 @@ module Merge
       end
     end
 
+    def file_dir_conflict(path, diff, name)
+      path.dirname.ascend do |parent|
+        old_item, new_item = diff[parent]
+        next unless new_item
+
+        @conflicts[parent] = case name
+          when @inputs.left_name  then [old_item, new_item, nil]
+          when @inputs.right_name then [old_item, nil, new_item]
+        end
+
+        @clean_diff.delete(parent)
+        rename = "#{ parent }~#{ name }"
+        @untracked[rename] = new_item
+      end
+    end
+
     def add_conflicts_to_index
       @conflicts.each do |path, items|
         @repo.index.add_conflict_set(path, items)
+      end
+    end
+
+    def write_untracked_files
+      @untracked.each do |path, item|
+        blob = @repo.database.load(item.oid)
+        @repo.workspace.write_file(path, blob.data)
       end
     end
 
