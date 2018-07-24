@@ -38,7 +38,11 @@ class Index
     end
 
     def key
-      path
+      [path, stage]
+    end
+
+    def stage
+      (flags >> 12) & 0x3
     end
 
     def parent_directories
