@@ -63,6 +63,17 @@ class Index
     @changed = true
   end
 
+  def add_conflict_set(pathname, items)
+    remove_entry_with_stage(pathname, 0)
+
+    items.each_with_index do |item, n|
+      next unless item
+      entry = Entry.create_from_db(pathname, item, n + 1)
+      store_entry(entry)
+    end
+    @changed = true
+  end
+
   def update_entry_stat(entry, stat)
     entry.update_stat(stat)
     @changed = true
@@ -80,6 +91,10 @@ class Index
     else
       enum_for(:each_entry)
     end
+  end
+
+  def conflict?
+    @entries.any? { |key, entry| entry.stage > 0 }
   end
 
   def entry_for_path(path)
