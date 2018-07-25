@@ -47,11 +47,25 @@ module Command
     def diff_index_workspace
       return unless @options[:patch]
 
-      @status.workspace_changes.each do |path, state|
-        case state
-        when :modified then print_diff(from_index(path), from_file(path))
-        when :deleted  then print_diff(from_index(path), from_nothing(path))
+      paths = @status.conflicts.keys + @status.workspace_changes.keys
+
+      paths.sort.each do |path|
+        if @status.conflicts.has_key?(path)
+          print_conflict_diff(path)
+        else
+          print_workspace_diff(path)
         end
+      end
+    end
+
+    def print_conflict_diff(path)
+      puts "* Unmerged path #{ path }"
+    end
+
+    def print_workspace_diff(path)
+      case @status.workspace_changes[path]
+      when :modified then print_diff(from_index(path), from_file(path))
+      when :deleted  then print_diff(from_index(path), from_nothing(path))
       end
     end
 
