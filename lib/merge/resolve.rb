@@ -4,6 +4,12 @@ module Merge
     def initialize(repository, inputs)
       @repo   = repository
       @inputs = inputs
+
+      @on_progress = nil
+    end
+
+    def on_progress(&block)
+      @on_progress = block
     end
 
     def execute
@@ -47,11 +53,16 @@ module Merge
       left = @left_diff[path][1]
       return if left == right
 
+      log "Auto-merging #{ path }" if left and right
+
       oid_ok, oid = merge_blobs(base&.oid, left&.oid, right&.oid)
       mode_ok, mode = merge_modes(base&.mode, left&.mode, right&.mode)
 
       @clean_diff[path] = [left, Database::Entry.new(oid, mode)]
-      @conflicts[path] = [base, left, right] unless oid_ok and mode_ok
+      return if oid_ok and mode_ok
+
+      @conflicts[path] = [base, left, right]
+      log_conflict(path)
     end
 
     def merge_blobs(base_oid, left_oid, right_oid)
@@ -104,6 +115,9 @@ module Merge
         @clean_diff.delete(parent)
         rename = "#{ parent }~#{ name }"
         @untracked[rename] = new_item
+
+        log "Adding #{ path }" unless diff[path]
+        log_conflict(parent, rename)
       end
     end
 
@@ -118,6 +132,51 @@ module Merge
         blob = @repo.database.load(item.oid)
         @repo.workspace.write_file(path, blob.data)
       end
+    end
+
+    def log(message)
+      @on_progress&.call(message)
+    end
+
+    def log_conflict(path, rename = nil)
+      base, left, right = @conflicts[path]
+
+      if left and right
+        log_left_right_conflict(path)
+      elsif base and (left or right)
+        log_modify_delete_conflict(path, rename)
+      else
+        log_file_directory_conflict(path, rename)
+      end
+    end
+
+    def log_left_right_conflict(path)
+      type = @conflicts[path][0] ? "content" : "add/add"
+      log "CONFLICT (#{ type }): Merge conflict in #{ path }"
+    end
+
+    def log_modify_delete_conflict(path, rename)
+      deleted, modified = log_branch_names(path)
+
+      rename = rename ? " at #{ rename }" : ""
+
+      log "CONFLICT (modify/delete): #{ path } " +
+          "deleted in #{ deleted } and modified in #{ modified }. " +
+          "Version #{ modified } of #{ path } left in tree#{ rename }."
+    end
+
+    def log_file_directory_conflict(path, rename)
+      type = @conflicts[path][1] ? "file/directory" : "directory/file"
+      branch, _ = log_branch_names(path)
+
+      log "CONFLICT (#{ type }): There is a directory " +
+          "with name #{ path } in #{ branch }. " +
+          "Adding #{ path } as #{ rename }"
+    end
+
+    def log_branch_names(path)
+      a, b = @inputs.left_name, @inputs.right_name
+      @conflicts[path][1] ? [b, a] : [a, b]
     end
 
   end

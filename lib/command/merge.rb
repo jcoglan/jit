@@ -26,10 +26,15 @@ module Command
       repo.index.load_for_update
 
       merge = ::Merge::Resolve.new(repo, @inputs)
+      merge.on_progress { |info| puts info }
       merge.execute
 
       repo.index.write_updates
-      exit 1 if repo.index.conflict?
+
+      if repo.index.conflict?
+        puts "Automatic merge failed; fix conflicts and then commit the result."
+        exit 1
+      end
     end
 
     def commit_merge
