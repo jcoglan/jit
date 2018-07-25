@@ -325,6 +325,42 @@ describe Command::Merge do
       jit_cmd "diff"
       assert_stdout "* Unmerged path g.txt\n"
     end
+
+    it "shows the diff against our version" do
+      jit_cmd "diff", "--ours"
+
+      assert_stdout <<~DIFF
+        * Unmerged path g.txt
+        diff --git a/g.txt b/g.txt
+        index 0cfbf08..2603ab2 100644
+        --- a/g.txt
+        +++ b/g.txt
+        @@ -1,1 +1,5 @@
+        +<<<<<<< HEAD
+         2
+        +=======
+        +3
+        +>>>>>>> topic
+      DIFF
+    end
+
+    it "shows the diff against their version" do
+      jit_cmd "diff", "--theirs"
+
+      assert_stdout <<~DIFF
+        * Unmerged path g.txt
+        diff --git a/g.txt b/g.txt
+        index 00750ed..2603ab2 100644
+        --- a/g.txt
+        +++ b/g.txt
+        @@ -1,1 +1,5 @@
+        +<<<<<<< HEAD
+        +2
+        +=======
+         3
+        +>>>>>>> topic
+      DIFF
+    end
   end
 
   describe "conflicted merge: add-add mode conflict" do
@@ -366,6 +402,26 @@ describe Command::Merge do
       assert_stdout <<~STATUS
         AA g.txt
       STATUS
+    end
+
+    it "lists the file as unmerged in the diff" do
+      jit_cmd "diff"
+      assert_stdout "* Unmerged path g.txt\n"
+    end
+
+    it "reports the mode change in the appropriate diff" do
+      jit_cmd "diff", "-2"
+      assert_stdout <<~DIFF
+        * Unmerged path g.txt
+      DIFF
+
+      jit_cmd "diff", "-3"
+      assert_stdout <<~DIFF
+        * Unmerged path g.txt
+        diff --git a/g.txt b/g.txt
+        old mode 100755
+        new mode 100644
+      DIFF
     end
   end
 
