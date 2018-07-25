@@ -320,6 +320,11 @@ describe Command::Merge do
         AA g.txt
       STATUS
     end
+
+    it "lists the file as unmerged in the diff" do
+      jit_cmd "diff"
+      assert_stdout "* Unmerged path g.txt\n"
+    end
   end
 
   describe "conflicted merge: add-add mode conflict" do
@@ -407,6 +412,11 @@ describe Command::Merge do
         ?? g.txt~HEAD
       STATUS
     end
+
+    it "lists the file as unmerged in the diff" do
+      jit_cmd "diff"
+      assert_stdout "* Unmerged path g.txt\n"
+    end
   end
 
   describe "conflicted merge: directory/file addition" do
@@ -450,6 +460,11 @@ describe Command::Merge do
         UA g.txt
         ?? g.txt~topic
       STATUS
+    end
+
+    it "lists the file as unmerged in the diff" do
+      jit_cmd "diff"
+      assert_stdout "* Unmerged path g.txt\n"
     end
   end
 
@@ -498,6 +513,11 @@ describe Command::Merge do
         UU f.txt
       STATUS
     end
+
+    it "lists the file as unmerged in the diff" do
+      jit_cmd "diff"
+      assert_stdout "* Unmerged path f.txt\n"
+    end
   end
 
   describe "conflicted merge: edit-delete" do
@@ -536,6 +556,11 @@ describe Command::Merge do
         UD f.txt
       STATUS
     end
+
+    it "lists the file as unmerged in the diff" do
+      jit_cmd "diff"
+      assert_stdout "* Unmerged path f.txt\n"
+    end
   end
 
   describe "conflicted merge: delete-edit" do
@@ -573,6 +598,11 @@ describe Command::Merge do
       assert_stdout <<~STATUS
         DU f.txt
       STATUS
+    end
+
+    it "lists the file as unmerged in the diff" do
+      jit_cmd "diff"
+      assert_stdout "* Unmerged path f.txt\n"
     end
   end
 
@@ -618,6 +648,15 @@ describe Command::Merge do
         ?? nest~topic
       STATUS
     end
+
+    it "lists the file as unmerged in the diff" do
+      jit_cmd "diff"
+
+      assert_stdout <<~DIFF
+        * Unmerged path nest
+        * Unmerged path nest/f.txt
+      DIFF
+    end
   end
 
   describe "conflicted merge: edit-add-child" do
@@ -661,6 +700,11 @@ describe Command::Merge do
         A  nest/f.txt/g.txt
         ?? nest/f.txt~HEAD
       STATUS
+    end
+
+    it "lists the file as unmerged in the diff" do
+      jit_cmd "diff"
+      assert_stdout "* Unmerged path nest/f.txt\n"
     end
   end
 
