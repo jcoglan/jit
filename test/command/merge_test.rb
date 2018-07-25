@@ -312,6 +312,14 @@ describe Command::Merge do
     it "does not write a merge commit" do
       assert_no_merge
     end
+
+    it "reports the conflict in the status" do
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        AA g.txt
+      STATUS
+    end
   end
 
   describe "conflicted merge: add-add mode conflict" do
@@ -345,6 +353,14 @@ describe Command::Merge do
 
     it "does not write a merge commit" do
       assert_no_merge
+    end
+
+    it "reports the conflict in the status" do
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        AA g.txt
+      STATUS
     end
   end
 
@@ -381,6 +397,16 @@ describe Command::Merge do
     it "does not write a merge commit" do
       assert_no_merge
     end
+
+    it "reports the conflict in the status" do
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        AU g.txt
+        A  g.txt/nested.txt
+        ?? g.txt~HEAD
+      STATUS
+    end
   end
 
   describe "conflicted merge: directory/file addition" do
@@ -415,6 +441,15 @@ describe Command::Merge do
 
     it "does not write a merge commit" do
       assert_no_merge
+    end
+
+    it "reports the conflict in the status" do
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        UA g.txt
+        ?? g.txt~topic
+      STATUS
     end
   end
 
@@ -455,6 +490,14 @@ describe Command::Merge do
     it "does not write a merge commit" do
       assert_no_merge
     end
+
+    it "reports the conflict in the status" do
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        UU f.txt
+      STATUS
+    end
   end
 
   describe "conflicted merge: edit-delete" do
@@ -485,6 +528,14 @@ describe Command::Merge do
     it "does not write a merge commit" do
       assert_no_merge
     end
+
+    it "reports the conflict in the status" do
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        UD f.txt
+      STATUS
+    end
   end
 
   describe "conflicted merge: delete-edit" do
@@ -514,6 +565,14 @@ describe Command::Merge do
 
     it "does not write a merge commit" do
       assert_no_merge
+    end
+
+    it "reports the conflict in the status" do
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        DU f.txt
+      STATUS
     end
   end
 
@@ -549,6 +608,16 @@ describe Command::Merge do
     it "does not write a merge commit" do
       assert_no_merge
     end
+
+    it "reports the conflict in the status" do
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        UA nest
+        UD nest/f.txt
+        ?? nest~topic
+      STATUS
+    end
   end
 
   describe "conflicted merge: edit-add-child" do
@@ -582,6 +651,16 @@ describe Command::Merge do
 
     it "does not write a merge commit" do
       assert_no_merge
+    end
+
+    it "reports the conflict in the status" do
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        UD nest/f.txt
+        A  nest/f.txt/g.txt
+        ?? nest/f.txt~HEAD
+      STATUS
     end
   end
 
