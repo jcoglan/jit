@@ -13,6 +13,10 @@ module Command
       @parser.on "--cached", "--staged" do
         @options[:cached] = true
       end
+
+      @parser.on("-1", "--base")   { @options[:stage] = 1 }
+      @parser.on("-2", "--ours")   { @options[:stage] = 2 }
+      @parser.on("-3", "--theirs") { @options[:stage] = 3 }
     end
 
     def run
@@ -60,6 +64,11 @@ module Command
 
     def print_conflict_diff(path)
       puts "* Unmerged path #{ path }"
+
+      target = from_index(path, @options[:stage])
+      return unless target
+
+      print_diff(target, from_file(path))
     end
 
     def print_workspace_diff(path)
@@ -76,10 +85,11 @@ module Command
       Target.new(path, entry.oid, entry.mode.to_s(8), blob.data)
     end
 
-    def from_index(path)
-      entry = repo.index.entry_for_path(path)
-      blob  = repo.database.load(entry.oid)
+    def from_index(path, stage = 0)
+      entry = repo.index.entry_for_path(path, stage)
+      return nil unless entry
 
+      blob = repo.database.load(entry.oid)
       Target.new(path, entry.oid, entry.mode.to_s(8), blob.data)
     end
 
