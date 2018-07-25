@@ -17,6 +17,29 @@ module Command
       :modified => "M"
     }
 
+    CONFLICT_LABEL_WIDTH = 17
+
+    CONFLICT_LONG_STATUS = {
+      [1, 2, 3] => "both modified:",
+      [1, 2]    => "deleted by them:",
+      [1, 3]    => "deleted by us:",
+      [2, 3]    => "both added:",
+      [2]       => "added by us:",
+      [3]       => "added by them:"
+    }
+
+    CONFLICT_SHORT_STATUS = {
+      [1, 2, 3] => "UU",
+      [1, 2]    => "UD",
+      [1, 3]    => "DU",
+      [2, 3]    => "AA",
+      [2]       => "AU",
+      [3]       => "UA"
+    }
+
+    UI_LABELS = { :normal => LONG_STATUS, :conflict => CONFLICT_LONG_STATUS }
+    UI_WIDTHS = { :normal => LABEL_WIDTH, :conflict => CONFLICT_LABEL_WIDTH }
+
     def define_options
       @options[:format] = "long"
       @parser.on("--porcelain") { @options[:format] = "porcelain" }
@@ -46,6 +69,9 @@ module Command
       print_changes("Changes to be committed",
           @status.index_changes, :green)
 
+      print_changes("Unmerged paths",
+          @status.conflicts, :red, :conflict)
+
       print_changes("Changes not staged for commit",
           @status.workspace_changes, :red)
 
@@ -65,13 +91,16 @@ module Command
       end
     end
 
-    def print_changes(message, changeset, style)
+    def print_changes(message, changeset, style, label_set = :normal)
       return if changeset.empty?
+
+      labels = UI_LABELS[label_set]
+      width  = UI_WIDTHS[label_set]
 
       puts "#{ message }:"
       puts ""
       changeset.each do |path, type|
-        status = type ? LONG_STATUS[type].ljust(LABEL_WIDTH, " ") : ""
+        status = type ? labels[type].ljust(width, " ") : ""
         puts "\t" + fmt(style, status + path)
       end
       puts ""
@@ -101,10 +130,13 @@ module Command
     end
 
     def status_for(path)
-      left  = SHORT_STATUS.fetch(@status.index_changes[path], " ")
-      right = SHORT_STATUS.fetch(@status.workspace_changes[path], " ")
-
-      left + right
+      if @status.conflicts.has_key?(path)
+        CONFLICT_SHORT_STATUS[@status.conflicts[path]]
+      else
+        left  = SHORT_STATUS.fetch(@status.index_changes[path], " ")
+        right = SHORT_STATUS.fetch(@status.workspace_changes[path], " ")
+        left + right
+      end
     end
 
   end
