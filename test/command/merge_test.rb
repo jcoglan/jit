@@ -282,6 +282,14 @@ describe Command::Merge do
         { "g.txt" => "3\n" })
     end
 
+    it "prints the merge conflicts" do
+      assert_stdout <<~MSG
+        Auto-merging g.txt
+        CONFLICT (add/add): Merge conflict in g.txt
+        Automatic merge failed; fix conflicts and then commit the result.
+      MSG
+    end
+
     it "puts the conflicted file in the workspace" do
       assert_workspace \
         "f.txt" => "1",
@@ -314,6 +322,14 @@ describe Command::Merge do
         { "g.txt" => ["2"] })
     end
 
+    it "prints the merge conflicts" do
+      assert_stdout <<~MSG
+        Auto-merging g.txt
+        CONFLICT (add/add): Merge conflict in g.txt
+        Automatic merge failed; fix conflicts and then commit the result.
+      MSG
+    end
+
     it "puts the conflicted file in the workspace" do
       assert_workspace \
         "f.txt" => "1",
@@ -338,6 +354,14 @@ describe Command::Merge do
         { "f.txt"            => "1" },
         { "g.txt"            => "2" },
         { "g.txt/nested.txt" => "3" })
+    end
+
+    it "prints the merge conflicts" do
+      assert_stdout <<~MSG
+        Adding g.txt/nested.txt
+        CONFLICT (file/directory): There is a directory with name g.txt in topic. Adding g.txt as g.txt~HEAD
+        Automatic merge failed; fix conflicts and then commit the result.
+      MSG
     end
 
     it "puts a namespaced copy of the conflicted file in the workspace" do
@@ -367,6 +391,14 @@ describe Command::Merge do
         { "g.txt"            => "3" })
     end
 
+    it "prints the merge conflicts" do
+      assert_stdout <<~MSG
+        Adding g.txt/nested.txt
+        CONFLICT (directory/file): There is a directory with name g.txt in HEAD. Adding g.txt as g.txt~topic
+        Automatic merge failed; fix conflicts and then commit the result.
+      MSG
+    end
+
     it "puts a namespaced copy of the conflicted file in the workspace" do
       assert_workspace \
         "f.txt"            => "1",
@@ -392,6 +424,14 @@ describe Command::Merge do
         { "f.txt" => "1\n" },
         { "f.txt" => "2\n" },
         { "f.txt" => "3\n" })
+    end
+
+    it "prints the merge conflicts" do
+      assert_stdout <<~MSG
+        Auto-merging f.txt
+        CONFLICT (content): Merge conflict in f.txt
+        Automatic merge failed; fix conflicts and then commit the result.
+      MSG
     end
 
     it "puts the conflicted file in the workspace" do
@@ -425,6 +465,13 @@ describe Command::Merge do
         { "f.txt" => nil })
     end
 
+    it "prints the merge conflicts" do
+      assert_stdout <<~MSG
+        CONFLICT (modify/delete): f.txt deleted in topic and modified in HEAD. Version HEAD of f.txt left in tree.
+        Automatic merge failed; fix conflicts and then commit the result.
+      MSG
+    end
+
     it "puts the left version in the workspace" do
       assert_workspace "f.txt" => "2"
     end
@@ -448,6 +495,13 @@ describe Command::Merge do
         { "f.txt" => "3" })
     end
 
+    it "prints the merge conflicts" do
+      assert_stdout <<~MSG
+        CONFLICT (modify/delete): f.txt deleted in HEAD and modified in topic. Version topic of f.txt left in tree.
+        Automatic merge failed; fix conflicts and then commit the result.
+      MSG
+    end
+
     it "puts the right version in the workspace" do
       assert_workspace "f.txt" => "3"
     end
@@ -469,6 +523,14 @@ describe Command::Merge do
         { "nest/f.txt" => "1" },
         { "nest/f.txt" => "2" },
         { "nest"       => "3" })
+    end
+
+    it "prints the merge conflicts" do
+      assert_stdout <<~MSG
+        CONFLICT (modify/delete): nest/f.txt deleted in topic and modified in HEAD. Version HEAD of nest/f.txt left in tree.
+        CONFLICT (directory/file): There is a directory with name nest in HEAD. Adding nest as nest~topic
+        Automatic merge failed; fix conflicts and then commit the result.
+      MSG
     end
 
     it "puts a namespaced copy of the conflicted file in the workspace" do
@@ -495,6 +557,14 @@ describe Command::Merge do
         { "nest/f.txt" => "1" },
         { "nest/f.txt" => "2" },
         { "nest/f.txt" => nil, "nest/f.txt/g.txt" => "3" })
+    end
+
+    it "prints the merge conflicts" do
+      assert_stdout <<~MSG
+        Adding nest/f.txt/g.txt
+        CONFLICT (modify/delete): nest/f.txt deleted in topic and modified in HEAD. Version HEAD of nest/f.txt left in tree at nest/f.txt~HEAD.
+        Automatic merge failed; fix conflicts and then commit the result.
+      MSG
     end
 
     it "puts a namespaced copy of the conflicted file in the workspace" do
