@@ -97,8 +97,8 @@ class Index
     @entries.any? { |key, entry| entry.stage > 0 }
   end
 
-  def entry_for_path(path)
-    @entries[[path.to_s, 0]]
+  def entry_for_path(path, stage = 0)
+    @entries[[path.to_s, stage]]
   end
 
   def tracked_file?(path)
