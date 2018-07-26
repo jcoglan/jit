@@ -9,6 +9,7 @@ module Command
 
     def run
       repo.index.load
+      resume_merge if pending_commit.in_progress?
 
       parent  = repo.refs.read_head
       message = @stdin.read
