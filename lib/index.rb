@@ -57,6 +57,8 @@ class Index
   end
 
   def add(pathname, oid, stat)
+    (1..3).each { |stage| remove_entry_with_stage(pathname, stage) }
+
     entry = Entry.create(pathname, oid, stat)
     discard_conflicts(entry)
     store_entry(entry)
