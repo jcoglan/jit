@@ -825,4 +825,86 @@ describe Command::Merge do
       assert_stdout ""
     end
   end
+
+  describe "conflict resolution" do
+    before do
+      merge3(
+        { "f.txt" => "1\n" },
+        { "f.txt" => "2\n" },
+        { "f.txt" => "3\n" })
+    end
+
+    it "prevents commits with unmerged entries" do
+      jit_cmd "commit"
+
+      assert_stderr <<~ERROR
+        error: Committing is not possible because you have unmerged files.
+        hint: Fix them up in the work tree, and then use 'jit add <file>'
+        hint: as appropriate to mark resolution and make a commit.
+        fatal: Exiting because of an unresolved conflict.
+      ERROR
+      assert_status 128
+
+      assert_equal "B", load_commit("@").message
+    end
+
+    it "prevents merge --continue with unmerged entries" do
+      jit_cmd "merge", "--continue"
+
+      assert_stderr <<~ERROR
+        error: Committing is not possible because you have unmerged files.
+        hint: Fix them up in the work tree, and then use 'jit add <file>'
+        hint: as appropriate to mark resolution and make a commit.
+        fatal: Exiting because of an unresolved conflict.
+      ERROR
+      assert_status 128
+
+      assert_equal "B", load_commit("@").message
+    end
+
+    it "commits a merge after resolving conflicts" do
+      jit_cmd "add", "f.txt"
+      jit_cmd "commit"
+      assert_status 0
+
+      commit = load_commit("@")
+      assert_equal "M", commit.message
+
+      parents = commit.parents.map { |oid| load_commit(oid).message }
+      assert_equal ["B", "C"], parents
+    end
+
+    it "allows merge --continue after resolving conflicts" do
+      jit_cmd "add", "f.txt"
+      jit_cmd "merge", "--continue"
+      assert_status 0
+
+      commit = load_commit("@")
+      assert_equal "M", commit.message
+
+      parents = commit.parents.map { |oid| load_commit(oid).message }
+      assert_equal ["B", "C"], parents
+    end
+
+    it "prevents merge --continue when none is in progress" do
+      jit_cmd "add", "f.txt"
+      jit_cmd "merge", "--continue"
+      jit_cmd "merge", "--continue"
+
+      assert_stderr "fatal: There is no merge in progress (MERGE_HEAD missing).\n"
+      assert_status 128
+    end
+
+    it "prevents starting a new merge while one is in progress" do
+      jit_cmd "merge"
+
+      assert_stderr <<~ERROR
+        error: Merging is not possible because you have unmerged files.
+        hint: Fix them up in the work tree, and then use 'jit add <file>'
+        hint: as appropriate to mark resolution and make a commit.
+        fatal: Exiting because of an unresolved conflict.
+      ERROR
+      assert_status 128
+    end
+  end
 end
