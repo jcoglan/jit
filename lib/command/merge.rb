@@ -9,11 +9,20 @@ module Command
 
     include WriteCommit
 
+    def define_options
+      @options[:mode] = :run
+      @parser.on("--continue") { @options[:mode] = :continue }
+    end
+
     def run
+      handle_continue if @options[:mode] == :continue
+      handle_in_progress_merge if pending_commit.in_progress?
+
       @inputs = ::Merge::Inputs.new(repo, Revision::HEAD, @args[0])
       handle_merged_ancestor if @inputs.already_merged?
       handle_fast_forward if @inputs.fast_forward?
 
+      pending_commit.start(@inputs.right_oid, @stdin.read)
       resolve_merge
       commit_merge
 
@@ -39,8 +48,11 @@ module Command
 
     def commit_merge
       parents = [@inputs.left_oid, @inputs.right_oid]
-      message = @stdin.read
+      message = pending_commit.merge_message
+
       write_commit(parents, message)
+
+      pending_commit.clear
     end
 
     def handle_merged_ancestor
@@ -64,6 +76,21 @@ module Command
       repo.refs.update_head(@inputs.right_oid)
 
       exit 0
+    end
+
+    def handle_continue
+      repo.index.load
+      resume_merge
+    rescue Repository::PendingCommit::Error => error
+      @stderr.puts "fatal: #{ error.message }"
+      exit 128
+    end
+
+    def handle_in_progress_merge
+      message = "Merging is not possible because you have unmerged files"
+      @stderr.puts "error: #{ message }."
+      @stderr.puts CONFLICT_MESSAGE
+      exit 128
     end
 
   end
