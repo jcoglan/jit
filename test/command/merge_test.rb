@@ -187,6 +187,23 @@ describe Command::Merge do
     end
   end
 
+  describe "unconflicted merge: in-file merge possible" do
+    before do
+      merge3(
+        { "f.txt" => "1\n2\n3\n" },
+        { "f.txt" => "4\n2\n3\n" },
+        { "f.txt" => "1\n2\n5\n" })
+    end
+
+    it "puts the combined changes in the workspace" do
+      assert_workspace "f.txt" => "4\n2\n5\n"
+    end
+
+    it "creates a clean merge" do
+      assert_clean_merge
+    end
+  end
+
   describe "unconflicted merge: edit and mode-change" do
     before do
       merge3(
