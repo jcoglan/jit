@@ -31,6 +31,10 @@ class Database
       @message = message
     end
 
+    def merge?
+      @parents.size > 1
+    end
+
     def parent
       @parents.first
     end
