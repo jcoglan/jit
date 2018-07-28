@@ -329,14 +329,26 @@ describe Command::Log do
       time = Time.now
 
       commit_tree "A", { "f.txt" => "0", "g.txt" => "0" }, time
-      commit_tree "B", { "f.txt" => "B" }, time
+      commit_tree "B", { "f.txt" => "B", "h.txt" => <<~EOF }, time
+        one
+        two
+        three
+      EOF
 
-      ("C".."D").each { |n| commit_tree n, { "f.txt" => n }, time + 1 }
+      ("C".."D").each { |n| commit_tree n, { "f.txt" => n, "h.txt" => <<~EOF }, time + 1 }
+        #{ n }
+        two
+        three
+      EOF
 
       jit_cmd "branch", "topic", "master~2"
       jit_cmd "checkout", "topic"
 
-      ("E".."H").each { |n| commit_tree n, { "g.txt" => n }, time + 2 }
+      ("E".."H").each { |n| commit_tree n, { "g.txt" => n , "h.txt" => <<~EOF }, time + 2 }
+        one
+        two
+        #{ n }
+      EOF
 
       jit_cmd "checkout", "master"
       set_stdin "J"
@@ -416,6 +428,58 @@ describe Command::Log do
         @@ -1,1 +1,1 @@
         -C
         +D
+        diff --git a/h.txt b/h.txt
+        index 4e5ce14..4139691 100644
+        --- a/h.txt
+        +++ b/h.txt
+        @@ -1,3 +1,3 @@
+        -C
+        +D
+         two
+         three
+      LOGS
+    end
+
+    it "shows combined patches for merges" do
+      jit_cmd "log", "--pretty=oneline", "--cc", "topic..master", "^master^^^"
+
+      assert_stdout <<~LOGS
+        #{ @master[0] } K
+        diff --git a/f.txt b/f.txt
+        index 02358d2..449e49e 100644
+        --- a/f.txt
+        +++ b/f.txt
+        @@ -1,1 +1,1 @@
+        -D
+        +K
+        #{ @master[1] } J
+        diff --cc h.txt
+        index 4139691,f3e97ee..4e78f4f
+        --- a/h.txt
+        +++ b/h.txt
+        @@@ -1,3 -1,3 +1,3 @@@
+         -one
+         +D
+          two
+        - three
+        + G
+        #{ @master[2] } D
+        diff --git a/f.txt b/f.txt
+        index 96d80cd..02358d2 100644
+        --- a/f.txt
+        +++ b/f.txt
+        @@ -1,1 +1,1 @@
+        -C
+        +D
+        diff --git a/h.txt b/h.txt
+        index 4e5ce14..4139691 100644
+        --- a/h.txt
+        +++ b/h.txt
+        @@ -1,3 +1,3 @@
+        -C
+        +D
+         two
+         three
       LOGS
     end
 

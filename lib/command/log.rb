@@ -35,6 +35,10 @@ module Command
         @options[:abbrev] = true if @options[:abbrev] == :auto
         @options[:format] = "oneline"
       end
+
+      @parser.on "--cc" do
+        @options[:combined] = @options[:patch] = true
+      end
     end
 
     def run
@@ -71,6 +75,12 @@ module Command
 
       blank_line
       puts fmt(:yellow, "commit #{ abbrev(commit) }") + decorate(commit)
+
+      if commit.merge?
+        oids = commit.parents.map { |oid| repo.database.short_oid(oid) }
+        puts "Merge: #{ oids.join(" ") }"
+      end
+
       puts "Author: #{ author.name } <#{ author.email }>"
       puts "Date:   #{ author.readable_time }"
       blank_line
@@ -125,7 +135,8 @@ module Command
     end
 
     def show_patch(commit)
-      return unless @options[:patch] and commit.parents.size <= 1
+      return unless @options[:patch]
+      return show_merge_patch(commit) if commit.merge?
 
       diff  = @rev_list.tree_diff(commit.parent, commit.oid)
       paths = diff.keys.sort_by(&:to_s)
@@ -135,6 +146,25 @@ module Command
       paths.each do |path|
         old_item, new_item = diff[path]
         print_diff(from_diff_item(path, old_item), from_diff_item(path, new_item))
+      end
+    end
+
+    def show_merge_patch(commit)
+      return unless @options[:combined]
+
+      diffs = commit.parents.map { |oid| @rev_list.tree_diff(oid, commit.oid) }
+
+      paths = diffs.first.keys.select do |path|
+        diffs.drop(1).all? { |diff| diff.has_key?(path) }
+      end
+
+      blank_line
+
+      paths.each do |path|
+        parents = diffs.map { |diff| from_diff_item(path, diff[path][0]) }
+        child   = from_diff_item(path, diffs.first[path][1])
+
+        print_combined_diff(parents, child)
       end
     end
 
