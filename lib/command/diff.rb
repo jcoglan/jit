@@ -63,12 +63,17 @@ module Command
     end
 
     def print_conflict_diff(path)
-      puts "* Unmerged path #{ path }"
+      targets = (0..3).map { |stage| from_index(path, stage) }
+      left, right = targets[2], targets[3]
 
-      target = from_index(path, @options[:stage])
-      return unless target
-
-      print_diff(target, from_file(path))
+      if @options[:stage]
+        puts "* Unmerged path #{ path }"
+        print_diff(targets[@options[:stage]], from_file(path))
+      elsif left and right
+        print_combined_diff([left, right], from_file(path))
+      else
+        puts "* Unmerged path #{ path }"
+      end
     end
 
     def print_workspace_diff(path)
