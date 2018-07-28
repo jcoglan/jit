@@ -1,3 +1,4 @@
+require_relative "./diff/combined"
 require_relative "./diff/hunk"
 require_relative "./diff/myers"
 
@@ -28,5 +29,10 @@ module Diff
 
   def self.diff_hunks(a, b)
     Hunk.filter(diff(a, b))
+  end
+
+  def self.combined(as, b)
+    diffs = as.map { |a| diff(a, b) }
+    Combined.new(diffs).to_a
   end
 end
