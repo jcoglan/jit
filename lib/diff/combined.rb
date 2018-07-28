@@ -4,6 +4,19 @@ module Diff
     include Enumerable
 
     Row = Struct.new(:edits) do
+      def type
+        types = edits.compact.map(&:type)
+        types.include?(:ins) ? :ins : types.first
+      end
+
+      def a_lines
+        edits.map { |edit| edit&.a_line }
+      end
+
+      def b_line
+        edits.first&.b_line
+      end
+
       def to_s
         symbols = edits.map { |edit| SYMBOLS.fetch(edit&.type, " ") }
 
