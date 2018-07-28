@@ -338,9 +338,21 @@ describe Command::Merge do
       STATUS
     end
 
-    it "lists the file as unmerged in the diff" do
+    it "shows the combined diff against stages 2 and 3" do
       jit_cmd "diff"
-      assert_stdout "* Unmerged path g.txt\n"
+
+      assert_stdout <<~DIFF
+        diff --cc g.txt
+        index 0cfbf08,00750ed..2603ab2
+        --- a/g.txt
+        +++ b/g.txt
+        @@@ -1,1 -1,1 +1,5 @@@
+        ++<<<<<<< HEAD
+         +2
+        ++=======
+        + 3
+        ++>>>>>>> topic
+      DIFF
     end
 
     it "shows the diff against our version" do
@@ -421,9 +433,16 @@ describe Command::Merge do
       STATUS
     end
 
-    it "lists the file as unmerged in the diff" do
+    it "shows the combined diff against stages 2 and 3" do
       jit_cmd "diff"
-      assert_stdout "* Unmerged path g.txt\n"
+
+      assert_stdout <<~DIFF
+        diff --cc g.txt
+        index d8263ee,d8263ee..d8263ee
+        mode 100644,100755..100644
+        --- a/g.txt
+        +++ b/g.txt
+      DIFF
     end
 
     it "reports the mode change in the appropriate diff" do
@@ -587,9 +606,21 @@ describe Command::Merge do
       STATUS
     end
 
-    it "lists the file as unmerged in the diff" do
+    it "shows the combined diff against stages 2 and 3" do
       jit_cmd "diff"
-      assert_stdout "* Unmerged path f.txt\n"
+
+      assert_stdout <<~DIFF
+        diff --cc f.txt
+        index 0cfbf08,00750ed..2603ab2
+        --- a/f.txt
+        +++ b/f.txt
+        @@@ -1,1 -1,1 +1,5 @@@
+        ++<<<<<<< HEAD
+         +2
+        ++=======
+        + 3
+        ++>>>>>>> topic
+      DIFF
     end
   end
 
