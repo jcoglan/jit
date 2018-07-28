@@ -64,6 +64,24 @@ module Command
       hunks.each { |hunk| print_diff_hunk(hunk) }
     end
 
+    def print_combined_diff(as, b)
+      header("diff --cc #{ b.path }")
+
+      a_oids = as.map { |a| short a.oid }
+      oid_range = "index #{ a_oids.join(",") }..#{ short b.oid }"
+      header(oid_range)
+
+      unless as.all? { |a| a.mode == b.mode }
+        header("mode #{ as.map(&:mode).join(",") }..#{ b.mode }")
+      end
+
+      header("--- a/#{ b.diff_path }")
+      header("+++ b/#{ b.diff_path }")
+
+      hunks = ::Diff.combined_hunks(as.map(&:data), b.data)
+      hunks.each { |hunk| print_diff_hunk(hunk) }
+    end
+
     def print_diff_hunk(hunk)
       puts fmt(:cyan, hunk.header)
       hunk.edits.each { |edit| print_diff_edit(edit) }
