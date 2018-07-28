@@ -12,6 +12,10 @@ module Diff
   Line = Struct.new(:number, :text)
 
   Edit = Struct.new(:type, :a_line, :b_line) do
+    def a_lines
+      [a_line]
+    end
+
     def to_s
       line = a_line || b_line
       SYMBOLS.fetch(type) + line.text
@@ -34,5 +38,9 @@ module Diff
   def self.combined(as, b)
     diffs = as.map { |a| diff(a, b) }
     Combined.new(diffs).to_a
+  end
+
+  def self.combined_hunks(as, b)
+    Hunk.filter(combined(as, b))
   end
 end
