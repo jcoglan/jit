@@ -2,7 +2,7 @@ module Diff
 
   HUNK_CONTEXT = 3
 
-  Hunk = Struct.new(:a_start, :b_start, :edits) do
+  Hunk = Struct.new(:a_starts, :b_start, :edits) do
     def self.filter(edits)
       hunks  = []
       offset = 0
@@ -13,10 +13,10 @@ module Diff
 
         offset -= HUNK_CONTEXT + 1
 
-        a_start = (offset < 0) ? 0 : edits[offset].a_line.number
-        b_start = (offset < 0) ? 0 : edits[offset].b_line.number
+        a_starts = (offset < 0) ? []  : edits[offset].a_lines.map(&:number)
+        b_start  = (offset < 0) ? nil : edits[offset].b_line.number
 
-        hunks.push(Hunk.new(a_start, b_start, []))
+        hunks.push(Hunk.new(a_starts, b_start, []))
         offset = Hunk.build(hunks.last, edits, offset)
       end
     end
@@ -42,19 +42,22 @@ module Diff
     end
 
     def header
-      a_offset = offsets_for(:a_line, a_start).join(",")
-      b_offset = offsets_for(:b_line, b_start).join(",")
+      a_lines = edits.map(&:a_lines).transpose
+      offsets = a_lines.map.with_index { |lines, i| format("-", lines, a_starts[i]) }
 
-      "@@ -#{ a_offset } +#{ b_offset } @@"
+      offsets.push(format("+", edits.map(&:b_line), b_start))
+      sep = "@" * offsets.size
+
+      [sep, *offsets, sep].join(" ")
     end
 
     private
 
-    def offsets_for(line_type, default)
-      lines = edits.map(&line_type).compact
-      start = lines.first&.number || default
+    def format(sign, lines, start)
+      lines = lines.compact
+      start = lines.first&.number || start || 0
 
-      [start, lines.size]
+      "#{ sign }#{ start },#{ lines.size }"
     end
   end
 
