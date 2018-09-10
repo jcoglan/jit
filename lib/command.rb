@@ -6,6 +6,7 @@ require_relative "./command/diff"
 require_relative "./command/init"
 require_relative "./command/log"
 require_relative "./command/merge"
+require_relative "./command/rm"
 require_relative "./command/status"
 
 module Command
@@ -14,6 +15,7 @@ module Command
   COMMANDS = {
     "init"     => Init,
     "add"      => Add,
+    "rm"       => Rm,
     "commit"   => Commit,
     "status"   => Status,
     "diff"     => Diff,
