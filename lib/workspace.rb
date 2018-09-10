@@ -57,6 +57,7 @@ class Workspace
 
   def remove(path)
     File.unlink(@pathname.join(path))
+  rescue Errno::ENOENT
   end
 
   def apply_migration(migration)
