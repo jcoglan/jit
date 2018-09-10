@@ -1,3 +1,5 @@
+require "pathname"
+
 require_relative "./base"
 require_relative "../repository/inspector"
 
@@ -7,10 +9,12 @@ module Command
     def run
       repo.index.load_for_update
 
-      @inspector = Repository::Inspector.new(repo)
-      @unstaged  = []
+      @head_oid    = repo.refs.read_head
+      @inspector   = Repository::Inspector.new(repo)
+      @uncommitted = []
+      @unstaged    = []
 
-      @args.each { |path| plan_removal(path) }
+      @args.each { |path| plan_removal(Pathname.new(path)) }
       exit_on_errors
 
       @args.each { |path| remove_file(path) }
@@ -22,10 +26,13 @@ module Command
     private
 
     def plan_removal(path)
+      item  = repo.database.load_tree_entry(@head_oid, path)
       entry = repo.index.entry_for_path(path)
       stat  = repo.workspace.stat_file(path)
 
-      if stat and @inspector.compare_index_to_workspace(entry, stat)
+      if @inspector.compare_tree_to_index(item, entry)
+        @uncommitted.push(path)
+      elsif stat and @inspector.compare_index_to_workspace(entry, stat)
         @unstaged.push(path)
       end
     end
@@ -37,15 +44,22 @@ module Command
     end
 
     def exit_on_errors
-      return if @unstaged.empty?
+      return if @uncommitted.empty? and @unstaged.empty?
 
-      files_have = (@unstaged.size == 1) ? "file has" : "files have"
-
-      @stderr.puts "error: the following #{ files_have } local modifications:"
-      @unstaged.each { |path| @stderr.puts "    #{ path }" }
+      print_errors(@uncommitted, "changes staged in the index")
+      print_errors(@unstaged, "local modifications")
 
       repo.index.release_lock
       exit 1
+    end
+
+    def print_errors(paths, message)
+      return if paths.empty?
+
+      files_have = (paths.size == 1) ? "file has" : "files have"
+
+      @stderr.puts "error: the following #{ files_have } #{ message }:"
+      paths.each { |path| @stderr.puts "    #{ path }" }
     end
 
   end
