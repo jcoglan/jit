@@ -54,5 +54,22 @@ describe Command::Rm do
       assert repo.index.tracked_file?("f.txt")
       assert_workspace "f.txt" => "2"
     end
+
+    it "fails if the file has uncommitted changes" do
+      write_file "f.txt", "2"
+      jit_cmd "add", "f.txt"
+      jit_cmd "rm", "f.txt"
+
+      assert_stderr <<~ERROR
+        error: the following file has changes staged in the index:
+            f.txt
+      ERROR
+
+      assert_status 1
+
+      repo.index.load
+      assert repo.index.tracked_file?("f.txt")
+      assert_workspace "f.txt" => "2"
+    end
   end
 end

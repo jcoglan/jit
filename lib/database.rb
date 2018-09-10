@@ -38,6 +38,15 @@ class Database
     @objects[oid] ||= read_object(oid)
   end
 
+  def load_tree_entry(oid, pathname)
+    commit = load(oid)
+    root   = Database::Entry.new(commit.tree, Tree::TREE_MODE)
+
+    pathname.each_filename.reduce(root) do |entry, name|
+      entry ? load(entry.oid).entries[name] : nil
+    end
+  end
+
   def short_oid(oid)
     oid[0..6]
   end
