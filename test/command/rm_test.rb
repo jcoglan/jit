@@ -78,6 +78,25 @@ describe Command::Rm do
       assert_workspace "f.txt" => "2"
     end
 
+    it "forces removal of unstaged changes" do
+      write_file "f.txt", "2"
+      jit_cmd "rm", "-f", "f.txt"
+
+      repo.index.load
+      refute repo.index.tracked_file?("f.txt")
+      assert_workspace({})
+    end
+
+    it "forces removal of uncommitted changes" do
+      write_file "f.txt", "2"
+      jit_cmd "add", "f.txt"
+      jit_cmd "rm", "-f", "f.txt"
+
+      repo.index.load
+      refute repo.index.tracked_file?("f.txt")
+      assert_workspace({})
+    end
+
     it "removes a file only from the index" do
       jit_cmd "rm", "--cached", "f.txt"
 

@@ -11,7 +11,8 @@ module Command
     WORKSPACE_CHANGED = "local modifications"
 
     def define_options
-      @parser.on("--cached") { @options[:cached] = true }
+      @parser.on("--cached")      { @options[:cached] = true }
+      @parser.on("-f", "--force") { @options[:force]  = true }
     end
 
     def run
@@ -43,6 +44,8 @@ module Command
       unless repo.index.tracked_file?(path)
         raise "pathspec '#{ path }' did not match any files"
       end
+
+      return if @options[:force]
 
       item  = repo.database.load_tree_entry(@head_oid, path)
       entry = repo.index.entry_for_path(path)
