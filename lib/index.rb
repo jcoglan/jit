@@ -103,12 +103,20 @@ class Index
     @entries[[path.to_s, stage]]
   end
 
+  def child_paths(path)
+    @parents[path.to_s].to_a
+  end
+
   def tracked_file?(path)
     (0..3).any? { |stage| @entries.has_key?([path.to_s, stage]) }
   end
 
+  def tracked_directory?(path)
+    @parents.has_key?(path.to_s)
+  end
+
   def tracked?(path)
-    tracked_file?(path) or @parents.has_key?(path.to_s)
+    tracked_file?(path) or tracked_directory?(path)
   end
 
   private
