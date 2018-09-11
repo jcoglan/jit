@@ -77,5 +77,50 @@ describe Command::Rm do
       assert repo.index.tracked_file?("f.txt")
       assert_workspace "f.txt" => "2"
     end
+
+    it "removes a file only from the index" do
+      jit_cmd "rm", "--cached", "f.txt"
+
+      repo.index.load
+      refute repo.index.tracked_file?("f.txt")
+      assert_workspace "f.txt" => "1"
+    end
+
+    it "removes a file from the index if it has unstaged changes" do
+      write_file "f.txt", "2"
+      jit_cmd "rm", "--cached", "f.txt"
+
+      repo.index.load
+      refute repo.index.tracked_file?("f.txt")
+      assert_workspace "f.txt" => "2"
+    end
+
+    it "removes a file from the index if it has uncommitted changes" do
+      write_file "f.txt", "2"
+      jit_cmd "add", "f.txt"
+      jit_cmd "rm", "--cached", "f.txt"
+
+      repo.index.load
+      refute repo.index.tracked_file?("f.txt")
+      assert_workspace "f.txt" => "2"
+    end
+
+    it "does not remove a file with both uncommitted and unstaged changes" do
+      write_file "f.txt", "2"
+      jit_cmd "add", "f.txt"
+      write_file "f.txt", "3"
+      jit_cmd "rm", "--cached", "f.txt"
+
+      assert_stderr <<~ERROR
+        error: the following file has staged content different from both the file and the HEAD:
+            f.txt
+      ERROR
+
+      assert_status 1
+
+      repo.index.load
+      assert repo.index.tracked_file?("f.txt")
+      assert_workspace "f.txt" => "3"
+    end
   end
 end
