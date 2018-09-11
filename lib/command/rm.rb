@@ -11,8 +11,9 @@ module Command
     WORKSPACE_CHANGED = "local modifications"
 
     def define_options
-      @parser.on("--cached")      { @options[:cached] = true }
-      @parser.on("-f", "--force") { @options[:force]  = true }
+      @parser.on("--cached")      { @options[:cached]    = true }
+      @parser.on("-f", "--force") { @options[:force]     = true }
+      @parser.on("-r")            { @options[:recursive] = true }
     end
 
     def run
@@ -24,7 +25,10 @@ module Command
       @unstaged     = []
       @both_changed = []
 
-      @args.each { |path| plan_removal(Pathname.new(path)) }
+      @args = @args.flat_map { |path| expand_path(path) }
+                   .map { |path| Pathname.new(path) }
+
+      @args.each { |path| plan_removal(path) }
       exit_on_errors
 
       @args.each { |path| remove_file(path) }
@@ -40,16 +44,24 @@ module Command
 
     private
 
-    def plan_removal(path)
-      unless repo.index.tracked_file?(path)
-        raise "pathspec '#{ path }' did not match any files"
+    def expand_path(path)
+      if repo.index.tracked_directory?(path)
+        return repo.index.child_paths(path) if @options[:recursive]
+        raise "not removing '#{ path }' recursively without -r"
       end
 
+      return [path] if repo.index.tracked_file?(path)
+      raise "pathspec '#{ path }' did not match any files"
+    end
+
+    def plan_removal(path)
       return if @options[:force]
+
+      stat = repo.workspace.stat_file(path)
+      raise "jit rm: '#{ path }': Operation not permitted" if stat&.directory?
 
       item  = repo.database.load_tree_entry(@head_oid, path)
       entry = repo.index.entry_for_path(path)
-      stat  = repo.workspace.stat_file(path)
 
       staged_change   = @inspector.compare_tree_to_index(item, entry)
       unstaged_change = @inspector.compare_index_to_workspace(entry, stat) if stat
