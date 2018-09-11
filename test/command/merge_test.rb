@@ -887,7 +887,7 @@ describe Command::Merge do
 
       assert_stderr <<~ERROR
         error: Committing is not possible because you have unmerged files.
-        hint: Fix them up in the work tree, and then use 'jit add <file>'
+        hint: Fix them up in the work tree, and then use 'jit add/rm <file>'
         hint: as appropriate to mark resolution and make a commit.
         fatal: Exiting because of an unresolved conflict.
       ERROR
@@ -901,7 +901,7 @@ describe Command::Merge do
 
       assert_stderr <<~ERROR
         error: Committing is not possible because you have unmerged files.
-        hint: Fix them up in the work tree, and then use 'jit add <file>'
+        hint: Fix them up in the work tree, and then use 'jit add/rm <file>'
         hint: as appropriate to mark resolution and make a commit.
         fatal: Exiting because of an unresolved conflict.
       ERROR
@@ -948,7 +948,7 @@ describe Command::Merge do
 
       assert_stderr <<~ERROR
         error: Merging is not possible because you have unmerged files.
-        hint: Fix them up in the work tree, and then use 'jit add <file>'
+        hint: Fix them up in the work tree, and then use 'jit add/rm <file>'
         hint: as appropriate to mark resolution and make a commit.
         fatal: Exiting because of an unresolved conflict.
       ERROR
