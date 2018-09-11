@@ -2,7 +2,7 @@ module Command
   module WriteCommit
 
     CONFLICT_MESSAGE = <<~MSG
-      hint: Fix them up in the work tree, and then use 'jit add <file>'
+      hint: Fix them up in the work tree, and then use 'jit add/rm <file>'
       hint: as appropriate to mark resolution and make a commit.
       fatal: Exiting because of an unresolved conflict.
     MSG
