@@ -142,4 +142,75 @@ describe Command::Rm do
       assert_workspace "f.txt" => "3"
     end
   end
+
+  describe "with a tree" do
+    before do
+      write_file "f.txt", "1"
+      write_file "outer/g.txt", "2"
+      write_file "outer/inner/h.txt", "3"
+
+      jit_cmd "add", "."
+      commit "first"
+    end
+
+    it "removes multiple files" do
+      jit_cmd "rm", "f.txt", "outer/inner/h.txt"
+
+      repo.index.load
+      assert_equal ["outer/g.txt"], repo.index.each_entry.map(&:path)
+      assert_workspace "outer/g.txt" => "2"
+    end
+
+    it "refuses to remove a directory" do
+      jit_cmd "rm", "f.txt", "outer"
+
+      assert_stderr "fatal: not removing 'outer' recursively without -r\n"
+      assert_status 128
+
+      repo.index.load
+      assert_equal ["f.txt", "outer/g.txt", "outer/inner/h.txt"],
+                   repo.index.each_entry.map(&:path)
+
+      assert_workspace \
+        "f.txt"             => "1",
+        "outer/g.txt"       => "2",
+        "outer/inner/h.txt" => "3"
+    end
+
+    it "does not remove a file replaced with a directory" do
+      delete "f.txt"
+      write_file "f.txt/nested", "keep me"
+
+      jit_cmd "rm", "f.txt"
+
+      assert_stderr "fatal: jit rm: 'f.txt': Operation not permitted\n"
+      assert_status 128
+
+      repo.index.load
+      assert_equal ["f.txt", "outer/g.txt", "outer/inner/h.txt"],
+                   repo.index.each_entry.map(&:path)
+
+      assert_workspace \
+        "f.txt/nested"      => "keep me",
+        "outer/g.txt"       => "2",
+        "outer/inner/h.txt" => "3"
+    end
+
+    it "removes a directory with -r" do
+      jit_cmd "rm", "-r", "outer"
+
+      repo.index.load
+      assert_equal ["f.txt"], repo.index.each_entry.map(&:path)
+      assert_workspace "f.txt" => "1"
+    end
+
+    it "does not remove untracked files" do
+      write_file "outer/inner/j.txt", "4"
+      jit_cmd "rm", "-r", "outer"
+
+      repo.index.load
+      assert_equal ["f.txt"], repo.index.each_entry.map(&:path)
+      assert_workspace "f.txt" => "1", "outer/inner/j.txt" => "4"
+    end
+  end
 end
