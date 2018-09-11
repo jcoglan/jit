@@ -39,6 +39,12 @@ describe Command::Rm do
       refute repo.index.tracked_file?("f.txt")
     end
 
+    it "fails if the file is not in the index" do
+      jit_cmd "rm", "nope.txt"
+      assert_status 128
+      assert_stderr "fatal: pathspec 'nope.txt' did not match any files\n"
+    end
+
     it "fails if the file has unstaged changes" do
       write_file "f.txt", "2"
       jit_cmd "rm", "f.txt"

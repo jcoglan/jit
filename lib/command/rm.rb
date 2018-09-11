@@ -21,11 +21,20 @@ module Command
       repo.index.write_updates
 
       exit 0
+
+    rescue => error
+      repo.index.release_lock
+      @stderr.puts "fatal: #{ error.message }"
+      exit 128
     end
 
     private
 
     def plan_removal(path)
+      unless repo.index.tracked_file?(path)
+        raise "pathspec '#{ path }' did not match any files"
+      end
+
       item  = repo.database.load_tree_entry(@head_oid, path)
       entry = repo.index.entry_for_path(path)
       stat  = repo.workspace.stat_file(path)
