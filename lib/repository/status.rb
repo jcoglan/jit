@@ -1,4 +1,3 @@
-require "pathname"
 require "set"
 
 require_relative "./inspector"
@@ -27,8 +26,9 @@ class Repository
       @workspace_changes = SortedHash.new
       @untracked_files   = SortedSet.new
 
+      @head_tree = @repo.database.load_tree_list(@repo.refs.read_head)
+
       scan_workspace
-      load_head_tree
       check_index_entries
       collect_deleted_head_files
     end
@@ -48,29 +48,6 @@ class Repository
         elsif @inspector.trackable_file?(path, stat)
           path += File::SEPARATOR if stat.directory?
           @untracked_files.add(path)
-        end
-      end
-    end
-
-    def load_head_tree
-      @head_tree = {}
-
-      head_oid = @repo.refs.read_head
-      return unless head_oid
-
-      commit = @repo.database.load(head_oid)
-      read_tree(commit.tree)
-    end
-
-    def read_tree(tree_oid, pathname = Pathname.new(""))
-      tree = @repo.database.load(tree_oid)
-
-      tree.each_entry do |name, entry|
-        path = pathname.join(name)
-        if entry.tree?
-          read_tree(entry.oid, path)
-        else
-          @head_tree[path.to_s] = entry
         end
       end
     end
