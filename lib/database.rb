@@ -1,4 +1,5 @@
 require "digest/sha1"
+require "pathname"
 require "strscan"
 require "zlib"
 
@@ -42,8 +43,29 @@ class Database
     commit = load(oid)
     root   = Database::Entry.new(commit.tree, Tree::TREE_MODE)
 
+    return root unless pathname
+
     pathname.each_filename.reduce(root) do |entry, name|
       entry ? load(entry.oid).entries[name] : nil
+    end
+  end
+
+  def load_tree_list(oid, pathname = nil)
+    return {} unless oid
+
+    entry = load_tree_entry(oid, pathname)
+    list  = {}
+
+    build_list(list, entry, pathname || Pathname.new(""))
+    list
+  end
+
+  def build_list(list, entry, prefix)
+    return unless entry
+    return list[prefix.to_s] = entry unless entry.tree?
+
+    load(entry.oid).each_entry do |name, item|
+      build_list(list, item, prefix.join(name))
     end
   end
 
