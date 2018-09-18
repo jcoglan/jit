@@ -21,7 +21,11 @@ module Command
       reset_files
       repo.index.write_updates
 
-      repo.refs.update_head(@commit_oid) if @args.empty?
+      if @args.empty?
+        head_oid = repo.refs.update_head(@commit_oid)
+        repo.refs.update_ref(Refs::ORIG_HEAD, head_oid)
+      end
+
       exit 0
     end
 
