@@ -59,19 +59,23 @@ describe Command::Reset do
       jit_cmd "add", "."
       commit "first"
 
-      jit_cmd "rm", "a.txt"
-      write_file "outer/d.txt", "4"
-      write_file "outer/inner/c.txt", "5"
+      write_file "outer/b.txt", "4"
       jit_cmd "add", "."
-      write_file "outer/e.txt", "6"
+      commit "second"
+
+      jit_cmd "rm", "a.txt"
+      write_file "outer/d.txt", "5"
+      write_file "outer/inner/c.txt", "6"
+      jit_cmd "add", "."
+      write_file "outer/e.txt", "7"
     end
 
     def assert_unchanged_workspace
       assert_workspace \
-        "outer/b.txt"       => "2",
-        "outer/d.txt"       => "4",
-        "outer/e.txt"       => "6",
-        "outer/inner/c.txt" => "5"
+        "outer/b.txt"       => "4",
+        "outer/d.txt"       => "5",
+        "outer/e.txt"       => "7",
+        "outer/inner/c.txt" => "6"
     end
 
     it "restores a file removed from the index" do
@@ -79,9 +83,9 @@ describe Command::Reset do
 
       assert_index \
         "a.txt"             => "1",
-        "outer/b.txt"       => "2",
-        "outer/d.txt"       => "4",
-        "outer/inner/c.txt" => "5"
+        "outer/b.txt"       => "4",
+        "outer/d.txt"       => "5",
+        "outer/inner/c.txt" => "6"
 
       assert_unchanged_workspace
     end
@@ -90,8 +94,8 @@ describe Command::Reset do
       jit_cmd "reset", "outer/inner"
 
       assert_index \
-        "outer/b.txt"       => "2",
-        "outer/d.txt"       => "4",
+        "outer/b.txt"       => "4",
+        "outer/d.txt"       => "5",
         "outer/inner/c.txt" => "3"
 
       assert_unchanged_workspace
@@ -101,8 +105,19 @@ describe Command::Reset do
       jit_cmd "reset", "outer/d.txt"
 
       assert_index \
+        "outer/b.txt"       => "4",
+        "outer/inner/c.txt" => "6"
+
+      assert_unchanged_workspace
+    end
+
+    it "resets a file to a specific commit" do
+      jit_cmd "reset", "@^", "outer/b.txt"
+
+      assert_index \
         "outer/b.txt"       => "2",
-        "outer/inner/c.txt" => "5"
+        "outer/d.txt"       => "5",
+        "outer/inner/c.txt" => "6"
 
       assert_unchanged_workspace
     end
