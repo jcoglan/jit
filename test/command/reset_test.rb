@@ -198,5 +198,21 @@ describe Command::Reset do
         ?? outer/e.txt
       STATUS
     end
+
+    it "lets you return to the previous state using ORIG_HEAD" do
+      jit_cmd "reset", "--hard", "@^"
+
+      assert_index \
+        "a.txt"             => "1",
+        "outer/b.txt"       => "2",
+        "outer/inner/c.txt" => "3"
+
+      jit_cmd "reset", "--hard", "ORIG_HEAD"
+
+      assert_index \
+        "a.txt"             => "1",
+        "outer/b.txt"       => "4",
+        "outer/inner/c.txt" => "3"
+    end
   end
 end
