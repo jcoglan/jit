@@ -6,6 +6,7 @@ require_relative "./command/diff"
 require_relative "./command/init"
 require_relative "./command/log"
 require_relative "./command/merge"
+require_relative "./command/reset"
 require_relative "./command/rm"
 require_relative "./command/status"
 
@@ -21,6 +22,7 @@ module Command
     "diff"     => Diff,
     "branch"   => Branch,
     "checkout" => Checkout,
+    "reset"    => Reset,
     "log"      => Log,
     "merge"    => Merge
   }

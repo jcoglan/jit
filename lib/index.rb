@@ -65,6 +65,11 @@ class Index
     @changed = true
   end
 
+  def add_from_db(pathname, item)
+    store_entry(Entry.create_from_db(pathname, item, 0))
+    @changed = true
+  end
+
   def add_conflict_set(pathname, items)
     remove_entry_with_stage(pathname, 0)
 
