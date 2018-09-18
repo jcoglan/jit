@@ -178,5 +178,25 @@ describe Command::Reset do
 
       assert_unchanged_workspace
     end
+
+    it "resets the index and workspace" do
+      write_file "a.txt/nested", "remove me"
+      write_file "outer/b.txt", "10"
+      delete "outer/inner"
+
+      jit_cmd "reset", "--hard"
+      assert_unchanged_head
+
+      assert_index \
+        "a.txt"             => "1",
+        "outer/b.txt"       => "4",
+        "outer/inner/c.txt" => "3"
+
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        ?? outer/e.txt
+      STATUS
+    end
   end
 end

@@ -14,7 +14,7 @@ class Repository
                 :workspace_changes,
                 :untracked_files
 
-    def initialize(repository)
+    def initialize(repository, commit_oid = nil)
       @repo  = repository
       @stats = {}
 
@@ -26,7 +26,8 @@ class Repository
       @workspace_changes = SortedHash.new
       @untracked_files   = SortedSet.new
 
-      @head_tree = @repo.database.load_tree_list(@repo.refs.read_head)
+      commit_oid ||= @repo.refs.read_head
+      @head_tree   = @repo.database.load_tree_list(commit_oid)
 
       scan_workspace
       check_index_entries
