@@ -50,13 +50,18 @@ class Workspace
     raise NoPermission, "stat('#{ path }'): Permission denied"
   end
 
-  def write_file(path, data)
+  def write_file(path, data, mode = nil, mkdir = false)
+    full_path = @pathname.join(path)
+    FileUtils.mkdir_p(full_path.dirname) if mkdir
+
     flags = File::WRONLY | File::CREAT | File::TRUNC
-    File.open(@pathname.join(path), flags) { |f| f.write(data) }
+    File.open(full_path, flags) { |f| f.write(data) }
+
+    File.chmod(mode, full_path) if mode
   end
 
   def remove(path)
-    File.unlink(@pathname.join(path))
+    FileUtils.rm_rf(@pathname.join(path))
     path.dirname.ascend { |dirname| remove_directory(dirname) }
   rescue Errno::ENOENT
   end
