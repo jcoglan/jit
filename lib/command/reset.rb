@@ -11,6 +11,7 @@ module Command
 
       @parser.on("--soft")  { @options[:mode] = :soft  }
       @parser.on("--mixed") { @options[:mode] = :mixed }
+      @parser.on("--hard")  { @options[:mode] = :hard  }
     end
 
     def run
@@ -36,6 +37,7 @@ module Command
 
     def reset_files
       return if @options[:mode] == :soft
+      return repo.hard_reset(@commit_oid) if @options[:mode] == :hard
 
       if @args.empty?
         repo.index.clear!
