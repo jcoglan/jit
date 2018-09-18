@@ -18,6 +18,11 @@ class Index
     clear
   end
 
+  def clear!
+    clear
+    @changed = true
+  end
+
   def load_for_update
     @lockfile.hold_for_update
     load
