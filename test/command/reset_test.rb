@@ -31,6 +31,13 @@ describe Command::Reset do
         "outer/inner/c.txt" => "3"
     end
 
+    it "removes everything from the index" do
+      jit_cmd "reset"
+
+      assert_index({})
+      assert_unchanged_workspace
+    end
+
     it "removes a single file from the index" do
       jit_cmd "reset", "a.txt"
 
@@ -68,6 +75,12 @@ describe Command::Reset do
       write_file "outer/inner/c.txt", "6"
       jit_cmd "add", "."
       write_file "outer/e.txt", "7"
+
+      @head_oid = repo.refs.read_head
+    end
+
+    def assert_unchanged_head
+      assert_equal @head_oid, repo.refs.read_head
     end
 
     def assert_unchanged_workspace
@@ -87,6 +100,7 @@ describe Command::Reset do
         "outer/d.txt"       => "5",
         "outer/inner/c.txt" => "6"
 
+      assert_unchanged_head
       assert_unchanged_workspace
     end
 
@@ -98,6 +112,7 @@ describe Command::Reset do
         "outer/d.txt"       => "5",
         "outer/inner/c.txt" => "3"
 
+      assert_unchanged_head
       assert_unchanged_workspace
     end
 
@@ -108,6 +123,7 @@ describe Command::Reset do
         "outer/b.txt"       => "4",
         "outer/inner/c.txt" => "6"
 
+      assert_unchanged_head
       assert_unchanged_workspace
     end
 
@@ -118,6 +134,47 @@ describe Command::Reset do
         "outer/b.txt"       => "2",
         "outer/d.txt"       => "5",
         "outer/inner/c.txt" => "6"
+
+      assert_unchanged_head
+      assert_unchanged_workspace
+    end
+
+    it "resets the whole index" do
+      jit_cmd "reset"
+
+      assert_index \
+        "a.txt"             => "1",
+        "outer/b.txt"       => "4",
+        "outer/inner/c.txt" => "3"
+
+      assert_unchanged_head
+      assert_unchanged_workspace
+    end
+
+    it "resets the whole index and moves HEAD" do
+      jit_cmd "reset", "@^"
+
+      assert_index \
+        "a.txt"             => "1",
+        "outer/b.txt"       => "2",
+        "outer/inner/c.txt" => "3"
+
+      assert_equal repo.database.load(@head_oid).parent,
+                   repo.refs.read_head
+
+      assert_unchanged_workspace
+    end
+
+    it "moves HEAD and leaves the index unchanged" do
+      jit_cmd "reset", "--soft", "@^"
+
+      assert_index \
+        "outer/b.txt"       => "4",
+        "outer/d.txt"       => "5",
+        "outer/inner/c.txt" => "6"
+
+      assert_equal repo.database.load(@head_oid).parent,
+                   repo.refs.read_head
 
       assert_unchanged_workspace
     end
