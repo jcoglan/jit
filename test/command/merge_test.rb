@@ -943,6 +943,20 @@ describe Command::Merge do
       assert_status 128
     end
 
+    it "aborts the merge" do
+      jit_cmd "merge", "--abort"
+      jit_cmd "status", "--porcelain"
+      assert_stdout ""
+    end
+
+    it "prevents aborting a merge when none is in progress" do
+      jit_cmd "merge", "--abort"
+      jit_cmd "merge", "--abort"
+
+      assert_stderr "fatal: There is no merge to abort (MERGE_HEAD missing).\n"
+      assert_status 128
+    end
+
     it "prevents starting a new merge while one is in progress" do
       jit_cmd "merge"
 
