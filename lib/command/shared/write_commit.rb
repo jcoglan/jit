@@ -7,13 +7,26 @@ module Command
       fatal: Exiting because of an unresolved conflict.
     MSG
 
+    MERGE_NOTES = <<~MSG
+
+      It looks like you may be committing a merge.
+      If this is not correct, please remove the file
+      \t.git/MERGE_HEAD
+      and try again.
+    MSG
+
     def define_write_commit_options
+      @options[:edit] = :auto
+      @parser.on("-e", "--[no-]edit") { |value| @options[:edit] = value }
+
       @parser.on "-m <message>", "--message=<message>" do |message|
         @options[:message] = message
+        @options[:edit]    = false if @options[:edit] == :auto
       end
 
       @parser.on "-F <file>", "--file=<file>" do |file|
         @options[:file] = expanded_pathname(file)
+        @options[:edit] = false if @options[:edit] == :auto
       end
     end
 
@@ -26,6 +39,11 @@ module Command
     end
 
     def write_commit(parents, message)
+      unless message
+        @stderr.puts "Aborting commit due to empty commit message."
+        exit 1
+      end
+
       tree   = write_tree
       name   = @env.fetch("GIT_AUTHOR_NAME")
       email  = @env.fetch("GIT_AUTHOR_EMAIL")
@@ -63,10 +81,24 @@ module Command
       handle_conflicted_index
 
       parents = [repo.refs.read_head, pending_commit.merge_oid]
-      write_commit(parents, pending_commit.merge_message)
+      message = compose_merge_message(MERGE_NOTES)
+      write_commit(parents, message)
 
       pending_commit.clear
       exit 0
+    end
+
+    def compose_merge_message(notes = nil)
+      edit_file(commit_message_path) do |editor|
+        editor.puts(pending_commit.merge_message)
+        editor.note(notes) if notes
+        editor.puts("")
+        editor.note(Commit::COMMIT_NOTES)
+      end
+    end
+
+    def commit_message_path
+      repo.git_path.join("COMMIT_EDITMSG")
     end
 
     def handle_conflicted_index
