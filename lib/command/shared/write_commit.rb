@@ -7,6 +7,24 @@ module Command
       fatal: Exiting because of an unresolved conflict.
     MSG
 
+    def define_write_commit_options
+      @parser.on "-m <message>", "--message=<message>" do |message|
+        @options[:message] = message
+      end
+
+      @parser.on "-F <file>", "--file=<file>" do |file|
+        @options[:file] = expanded_pathname(file)
+      end
+    end
+
+    def read_message
+      if @options.has_key?(:message)
+        "#{ @options[:message] }\n"
+      elsif @options.has_key?(:file)
+        File.read(@options[:file])
+      end
+    end
+
     def write_commit(parents, message)
       tree   = write_tree
       name   = @env.fetch("GIT_AUTHOR_NAME")
