@@ -11,11 +11,10 @@ module Command
 
     attr_reader :status
 
-    def initialize(dir, env, args, stdin, stdout, stderr)
+    def initialize(dir, env, args, stdout, stderr)
       @dir    = dir
       @env    = env
       @args   = args
-      @stdin  = stdin
       @stdout = stdout
       @stderr = stderr
 

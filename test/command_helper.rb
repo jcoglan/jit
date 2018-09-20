@@ -52,17 +52,12 @@ module CommandHelper
     @env[key] = value
   end
 
-  def set_stdin(string)
-    @stdin = StringIO.new(string)
-  end
-
   def jit_cmd(*argv)
     @env    ||= {}
-    @stdin  ||= StringIO.new
     @stdout   = StringIO.new
     @stderr   = StringIO.new
 
-    @cmd = Command.execute(repo_path.to_s, @env, argv, @stdin, @stdout, @stderr)
+    @cmd = Command.execute(repo_path.to_s, @env, argv, @stdout, @stderr)
   end
 
   def commit(message, time = nil)
