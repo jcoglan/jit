@@ -4,6 +4,8 @@ require "set"
 require_relative "./revision"
 
 class RevList
+  include Enumerable
+
   RANGE   = /^(.*)\.\.(.*)$/
   EXCLUDE = /^\^(.+)$/
 
