@@ -15,8 +15,8 @@ module Command
       message = @stdin.read
       commit  = write_commit([*parent], message)
 
-      is_root = parent.nil? ? "(root-commit) " : ""
-      puts "[#{ is_root }#{ commit.oid }] #{ message.lines.first }"
+      print_commit(commit)
+
       exit 0
     end
 
