@@ -1,6 +1,8 @@
 require "minitest/autorun"
 require "command_helper"
 
+require "rev_list"
+
 describe Command::Commit do
   include CommandHelper
 
@@ -103,6 +105,36 @@ describe Command::Commit do
 
       revs = RevList.new(repo, ["HEAD"])
       assert_equal ["first", "first"], revs.map { |commit| commit.message.strip }
+    end
+  end
+
+  describe "amending commits" do
+    before do
+      ["first", "second", "third"].each do |message|
+        write_file "file.txt", message
+        jit_cmd "add", "."
+        commit message
+      end
+    end
+
+    it "replaces the last commit's message" do
+      stub_editor("third [amended]\n") { jit_cmd "commit", "--amend" }
+      revs = RevList.new(repo, ["HEAD"])
+
+      assert_equal ["third [amended]", "second", "first"],
+                   revs.map { |commit| commit.message.strip }
+    end
+
+    it "replaces the last commit's tree" do
+      write_file "another.txt", "1"
+      jit_cmd "add", "another.txt"
+      jit_cmd "commit", "--amend"
+
+      commit = load_commit("HEAD")
+      diff   = repo.database.tree_diff(commit.parent, commit.oid)
+
+      assert_equal ["another.txt", "file.txt"],
+                   diff.keys.map(&:to_s).sort
     end
   end
 end

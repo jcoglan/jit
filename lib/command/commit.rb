@@ -16,6 +16,8 @@ module Command
     def define_options
       define_write_commit_options
 
+      @parser.on("--amend") { @options[:amend] = true }
+
       @parser.on "-C <commit>", "--reuse-message=<commit>" do |commit|
         @options[:reuse] = commit
         @options[:edit]  = false
@@ -29,6 +31,8 @@ module Command
 
     def run
       repo.index.load
+
+      handle_amend if @options[:amend]
       resume_merge if pending_commit.in_progress?
 
       parent  = repo.refs.read_head
@@ -59,6 +63,20 @@ module Command
       commit   = repo.database.load(revision.resolve)
 
       commit.message
+    end
+
+    def handle_amend
+      old  = repo.database.load(repo.refs.read_head)
+      tree = write_tree
+
+      message = compose_message(old.message)
+
+      new = Database::Commit.new(old.parents, tree.oid, old.author, message)
+      repo.database.store(new)
+      repo.refs.update_head(new.oid)
+
+      print_commit(new)
+      exit 0
     end
 
   end
