@@ -2,6 +2,7 @@ require "fileutils"
 require "pathname"
 
 require "command"
+require "editor"
 require "repository"
 
 module CommandHelper

@@ -3,6 +3,7 @@ require "pathname"
 
 require_relative "../display"
 require_relative "../display/pager"
+require_relative "../editor"
 require_relative "../repository"
 
 module Command
@@ -51,6 +52,17 @@ module Command
     def setup_pager
       return unless @display.isatty
       @display = Display::Pager.new(@display, @env)
+    end
+
+    def edit_file(path)
+      Editor.edit(path, editor_command) do |editor|
+        yield editor
+        editor.close unless @display.isatty
+      end
+    end
+
+    def editor_command
+      @env["GIT_EDITOR"] || @env["VISUAL"] || @env["EDITOR"]
     end
 
     def fmt(style, string)
