@@ -4,17 +4,6 @@ require "command_helper"
 describe Command::Reset do
   include CommandHelper
 
-  def assert_index(contents)
-    files = {}
-    repo.index.load
-
-    repo.index.each_entry do |entry|
-      files[entry.path] = repo.database.load(entry.oid).data
-    end
-
-    assert_equal(contents, files)
-  end
-
   describe "with no HEAD commit" do
     before do
       write_file "a.txt", "1"
