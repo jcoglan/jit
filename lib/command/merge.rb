@@ -10,6 +10,8 @@ module Command
     include WriteCommit
 
     def define_options
+      define_write_commit_options
+
       @options[:mode] = :run
 
       @parser.on("--abort")    { @options[:mode] = :abort    }
@@ -27,7 +29,7 @@ module Command
       handle_merged_ancestor if @inputs.already_merged?
       handle_fast_forward if @inputs.fast_forward?
 
-      pending_commit.start(@inputs.right_oid, @stdin.read)
+      pending_commit.start(@inputs.right_oid, read_message)
       resolve_merge
       commit_merge
 

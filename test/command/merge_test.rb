@@ -35,8 +35,7 @@ describe Command::Merge do
     commit_tree "C", right
 
     jit_cmd "checkout", "master"
-    set_stdin "M"
-    jit_cmd "merge", "topic"
+    jit_cmd "merge", "topic", "-m", "M"
   end
 
   def assert_clean_merge
@@ -47,13 +46,13 @@ describe Command::Merge do
     old_head   = load_commit("@^")
     merge_head = load_commit("topic")
 
-    assert_equal "M", commit.message
+    assert_equal "M", commit.message.strip
     assert_equal [old_head.oid, merge_head.oid], commit.parents
   end
 
   def assert_no_merge
     commit = load_commit("@")
-    assert_equal "B", commit.message
+    assert_equal "B", commit.message.strip
     assert_equal 1, commit.parents.size
   end
 
@@ -78,7 +77,7 @@ describe Command::Merge do
 
     it "does not change the repository state" do
       commit = load_commit("@")
-      assert_equal "C", commit.message
+      assert_equal "C", commit.message.strip
 
       jit_cmd "status", "--porcelain"
       assert_stdout ""
@@ -93,9 +92,7 @@ describe Command::Merge do
 
       jit_cmd "branch", "topic", "@^^"
       jit_cmd "checkout", "topic"
-
-      set_stdin "M"
-      jit_cmd "merge", "master"
+      jit_cmd "merge", "master", "-m", "M"
     end
 
     it "prints the fast-forward message" do
@@ -108,7 +105,7 @@ describe Command::Merge do
 
     it "updates the current branch HEAD" do
       commit = load_commit("@")
-      assert_equal "C", commit.message
+      assert_equal "C", commit.message.strip
 
       jit_cmd "status", "--porcelain"
       assert_stdout ""
@@ -841,8 +838,7 @@ describe Command::Merge do
     end
 
     it "performs the first merge" do
-      set_stdin "merge joiner"
-      jit_cmd "merge", "joiner"
+      jit_cmd "merge", "joiner", "-m", "merge joiner"
       assert_status 0
 
       assert_workspace \
@@ -855,13 +851,10 @@ describe Command::Merge do
     end
 
     it "performs the second merge" do
-      set_stdin "merge joiner"
-      jit_cmd "merge", "joiner"
-
+      jit_cmd "merge", "joiner", "-m", "merge joiner"
       commit_tree "H", "f.txt" => "4"
 
-      set_stdin "merge topic"
-      jit_cmd "merge", "topic"
+      jit_cmd "merge", "topic", "-m", "merge topic"
       assert_status 0
 
       assert_workspace \
@@ -893,7 +886,7 @@ describe Command::Merge do
       ERROR
       assert_status 128
 
-      assert_equal "B", load_commit("@").message
+      assert_equal "B", load_commit("@").message.strip
     end
 
     it "prevents merge --continue with unmerged entries" do
@@ -907,7 +900,7 @@ describe Command::Merge do
       ERROR
       assert_status 128
 
-      assert_equal "B", load_commit("@").message
+      assert_equal "B", load_commit("@").message.strip
     end
 
     it "commits a merge after resolving conflicts" do
@@ -916,9 +909,9 @@ describe Command::Merge do
       assert_status 0
 
       commit = load_commit("@")
-      assert_equal "M", commit.message
+      assert_equal "M", commit.message.strip
 
-      parents = commit.parents.map { |oid| load_commit(oid).message }
+      parents = commit.parents.map { |oid| load_commit(oid).message.strip }
       assert_equal ["B", "C"], parents
     end
 
@@ -928,9 +921,9 @@ describe Command::Merge do
       assert_status 0
 
       commit = load_commit("@")
-      assert_equal "M", commit.message
+      assert_equal "M", commit.message.strip
 
-      parents = commit.parents.map { |oid| load_commit(oid).message }
+      parents = commit.parents.map { |oid| load_commit(oid).message.strip }
       assert_equal ["B", "C"], parents
     end
 
