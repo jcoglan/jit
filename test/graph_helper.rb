@@ -23,7 +23,7 @@ module GraphHelper
 
     parents = parents.map { |oid| @commits[oid] }
     author  = Database::Author.new("A. U. Thor", "author@example.com", @time)
-    commit  = Database::Commit.new(parents, "0" * 40, author, message)
+    commit  = Database::Commit.new(parents, "0" * 40, author, author, message)
 
     database.store(commit)
     @commits[message] = commit.oid
