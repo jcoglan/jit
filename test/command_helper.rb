@@ -108,4 +108,12 @@ module CommandHelper
   def assert_executable(filename)
     assert File.executable?(repo_path.join(filename))
   end
+
+  class FakeEditor
+    Editor.instance_methods(false).each { |m| define_method(m) { |*| } }
+  end
+
+  def stub_editor(message)
+    Editor.stub(:edit, message, FakeEditor.new) { yield }
+  end
 end
