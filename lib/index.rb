@@ -109,6 +109,12 @@ class Index
     @entries.any? { |key, entry| entry.stage > 0 }
   end
 
+  def conflict_paths
+    paths = Set.new
+    each_entry { |entry| paths.add(entry.path) unless entry.stage == 0 }
+    paths
+  end
+
   def entry_for_path(path, stage = 0)
     @entries[[path.to_s, stage]]
   end

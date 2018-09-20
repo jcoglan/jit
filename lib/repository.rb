@@ -9,6 +9,8 @@ require_relative "./repository/pending_commit"
 require_relative "./repository/status"
 
 class Repository
+  attr_reader :git_path
+
   def initialize(git_path)
     @git_path = git_path
   end
