@@ -45,11 +45,9 @@ module Command
       end
 
       tree   = write_tree
-      name   = @env.fetch("GIT_AUTHOR_NAME")
-      email  = @env.fetch("GIT_AUTHOR_EMAIL")
-      author = Database::Author.new(name, email, Time.now)
+      author = current_author
+      commit = Database::Commit.new(parents, tree.oid, author, author, message)
 
-      commit = Database::Commit.new(parents, tree.oid, author, message)
       repo.database.store(commit)
       repo.refs.update_head(commit.oid)
 
@@ -60,6 +58,13 @@ module Command
       root = Database::Tree.build(repo.index.each_entry)
       root.traverse { |tree| repo.database.store(tree) }
       root
+    end
+
+    def current_author
+      name  = @env.fetch("GIT_AUTHOR_NAME")
+      email = @env.fetch("GIT_AUTHOR_EMAIL")
+
+      Database::Author.new(name, email, Time.now)
     end
 
     def print_commit(commit)
