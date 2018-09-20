@@ -5,6 +5,8 @@ require_relative "./path_filter"
 require_relative "./revision"
 
 class RevList
+  include Enumerable
+
   RANGE   = /^(.*)\.\.(.*)$/
   EXCLUDE = /^\^(.+)$/
 
