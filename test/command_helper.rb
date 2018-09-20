@@ -91,6 +91,17 @@ module CommandHelper
     repo.database.load(resolve_revision(expression))
   end
 
+  def assert_index(contents)
+    files = {}
+    repo.index.load
+
+    repo.index.each_entry do |entry|
+      files[entry.path] = repo.database.load(entry.oid).data
+    end
+
+    assert_equal(contents, files)
+  end
+
   def assert_workspace(contents)
     files = {}
 
