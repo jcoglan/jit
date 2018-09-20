@@ -69,9 +69,10 @@ module Command
       old  = repo.database.load(repo.refs.read_head)
       tree = write_tree
 
-      message = compose_message(old.message)
+      message   = compose_message(old.message)
+      committer = current_author
 
-      new = Database::Commit.new(old.parents, tree.oid, old.author, message)
+      new = Database::Commit.new(old.parents, tree.oid, old.author, committer, message)
       repo.database.store(new)
       repo.refs.update_head(new.oid)
 
