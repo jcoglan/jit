@@ -67,8 +67,7 @@ module CommandHelper
   def commit(message, time = nil)
     set_env("GIT_AUTHOR_NAME", "A. U. Thor")
     set_env("GIT_AUTHOR_EMAIL", "author@example.com")
-    set_stdin(message)
-    Time.stub(:now, time || Time.now) { jit_cmd("commit") }
+    Time.stub(:now, time || Time.now) { jit_cmd "commit", "-m", message }
   end
 
   def assert_status(status)

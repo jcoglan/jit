@@ -361,8 +361,7 @@ describe Command::Log do
       EOF
 
       jit_cmd "checkout", "master"
-      set_stdin "J"
-      jit_cmd "merge", "topic^"
+      jit_cmd "merge", "topic^", "-m", "J"
 
       commit_tree "K", { "f.txt" => "K" }, time + 3
 
@@ -513,9 +512,7 @@ describe Command::Log do
 
         ["C", "0"].each { |n| commit_tree n, { "g.txt" => n }, time + 1 }
 
-        set_stdin "J"
-        jit_cmd "merge", "topic^"
-
+        jit_cmd "merge", "topic^", "-m", "J"
         commit_tree "K", { "f.txt" => "K" }, time + 3
       end
 
