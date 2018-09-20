@@ -88,4 +88,21 @@ describe Command::Commit do
       end
     end
   end
+
+  describe "reusing messages" do
+    before do
+      write_file "file.txt", "1"
+      jit_cmd "add", "."
+      commit "first"
+    end
+
+    it "uses the message from another commit" do
+      write_file "file.txt", "2"
+      jit_cmd "add", "."
+      jit_cmd "commit", "-C", "@"
+
+      revs = RevList.new(repo, ["HEAD"])
+      assert_equal ["first", "first"], revs.map { |commit| commit.message.strip }
+    end
+  end
 end
