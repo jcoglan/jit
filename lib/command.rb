@@ -27,7 +27,7 @@ module Command
     "merge"    => Merge
   }
 
-  def self.execute(dir, env, argv, stdin, stdout, stderr)
+  def self.execute(dir, env, argv, stdout, stderr)
     name = argv.first
     args = argv.drop(1)
 
@@ -36,7 +36,7 @@ module Command
     end
 
     command_class = COMMANDS[name]
-    command = command_class.new(dir, env, args, stdin, stdout, stderr)
+    command = command_class.new(dir, env, args, stdout, stderr)
 
     command.execute
     command
