@@ -65,6 +65,7 @@ module Command
 
     def print_long_format
       print_branch_status
+      print_pending_commit_status
 
       print_changes("Changes to be committed",
           @status.index_changes, :green)
@@ -89,6 +90,42 @@ module Command
       else
         puts "On branch #{ current.short_name }"
       end
+    end
+
+    def print_pending_commit_status
+      case repo.pending_commit.merge_type
+      when :merge
+        if @status.conflicts.empty?
+          puts "All conflicts fixed but you are still merging."
+          hint "use 'jit commit' to conclude merge"
+        else
+          puts "You have unmerged paths."
+          hint "fix conflicts and run 'jit commit'"
+          hint "use 'jit merge --abort' to abort the merge"
+        end
+        puts ""
+      when :cherry_pick
+        print_pending_type("cherry-pick")
+      when :revert
+        print_pending_type("revert")
+      end
+    end
+
+    def print_pending_type(op)
+      oid = repo.database.short_oid(repo.pending_commit.merge_oid)
+      puts "You are currently #{ op }ing commit #{ oid }."
+
+      if @status.conflicts.empty?
+        hint "all conflicts fixed: run 'jit #{ op } --continue'"
+      else
+        hint "fix conflicts and run 'jit #{ op } --continue'"
+      end
+      hint "use 'jit #{ op } --abort' to cancel the #{ op } operation"
+      puts ""
+    end
+
+    def hint(message)
+      puts "  (#{ message })"
     end
 
     def print_changes(message, changeset, style, label_set = :normal)
