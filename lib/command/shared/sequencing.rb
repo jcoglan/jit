@@ -83,8 +83,13 @@ module Command
 
     def resume_sequencer
       loop do
-        break unless commit = sequencer.next_command
-        pick(commit)
+        action, commit = sequencer.next_command
+        break unless commit
+
+        case action
+        when :pick   then pick(commit)
+        when :revert then revert(commit)
+        end
         sequencer.drop_command
       end
 
