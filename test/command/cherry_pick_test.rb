@@ -236,5 +236,56 @@ describe Command::CherryPick do
         "f.txt" => "six",
         "g.txt" => "eight"
     end
+
+    describe "aborting in a conflicted state" do
+      before do
+        jit_cmd "cherry-pick", "..topic"
+        jit_cmd "cherry-pick", "--abort"
+      end
+
+      it "exits successfully" do
+        assert_status 0
+        assert_stderr ""
+      end
+
+      it "resets to the old HEAD" do
+        assert_equal "four", load_commit("HEAD").message.strip
+
+        jit_cmd "status", "--porcelain"
+        assert_stdout ""
+      end
+
+      it "removes the merge state" do
+        refute repo.pending_commit.in_progress?
+      end
+    end
+
+    describe "aborting in a committed state" do
+      before do
+        jit_cmd "cherry-pick", "..topic"
+        jit_cmd "add", "."
+        stub_editor("picked\n") { jit_cmd "commit" }
+
+        jit_cmd "cherry-pick", "--abort"
+      end
+
+      it "exits with a warning" do
+        assert_status 0
+        assert_stderr <<~WARN
+          warning: You seem to have moved HEAD. Not rewinding, check your HEAD!
+        WARN
+      end
+
+      it "does not reset HEAD" do
+        assert_equal "picked", load_commit("HEAD").message.strip
+
+        jit_cmd "status", "--porcelain"
+        assert_stdout ""
+      end
+
+      it "removes the merge state" do
+        refute repo.pending_commit.in_progress?
+      end
+    end
   end
 end
