@@ -2,7 +2,7 @@ require_relative "./base"
 require_relative "./shared/write_commit"
 require_relative "../merge/inputs"
 require_relative "../merge/resolve"
-require_relative "../revision"
+require_relative "../rev_list"
 
 module Command
   class CherryPick < Base
@@ -23,10 +23,8 @@ module Command
     def run
       handle_continue if @options[:mode] == :continue
 
-      revision = Revision.new(repo, @args[0])
-      commit   = repo.database.load(revision.resolve)
-
-      pick(commit)
+      commits = RevList.new(repo, @args.reverse, :walk => false)
+      commits.reverse_each { |commit| pick(commit) }
 
       exit 0
     end
