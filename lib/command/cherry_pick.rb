@@ -18,11 +18,18 @@ module Command
 
     def define_options
       @options[:mode] = :run
+
       @parser.on("--continue") { @options[:mode] = :continue }
+      @parser.on("--abort")    { @options[:mode] = :abort    }
+      @parser.on("--quit" )    { @options[:mode] = :quit     }
     end
 
     def run
-      handle_continue if @options[:mode] == :continue
+      case @options[:mode]
+      when :continue then handle_continue
+      when :abort    then handle_abort
+      when :quit     then handle_quit
+      end
 
       sequencer.start
       store_commit_sequence
@@ -118,6 +125,26 @@ module Command
         sequencer.drop_command
       end
 
+      sequencer.quit
+      exit 0
+    end
+
+    def handle_abort
+      pending_commit.clear(merge_type) if pending_commit.in_progress?
+      repo.index.load_for_update
+
+      begin
+        sequencer.abort
+      rescue => error
+        @stderr.puts "warning: #{ error.message }"
+      end
+
+      repo.index.write_updates
+      exit 0
+    end
+
+    def handle_quit
+      pending_commit.clear(merge_type) if pending_commit.in_progress?
       sequencer.quit
       exit 0
     end
