@@ -8,6 +8,7 @@ require_relative "./command/init"
 require_relative "./command/log"
 require_relative "./command/merge"
 require_relative "./command/reset"
+require_relative "./command/revert"
 require_relative "./command/rm"
 require_relative "./command/status"
 
@@ -26,7 +27,8 @@ module Command
     "reset"       => Reset,
     "log"         => Log,
     "merge"       => Merge,
-    "cherry-pick" => CherryPick
+    "cherry-pick" => CherryPick,
+    "revert"      => Revert
   }
 
   def self.execute(dir, env, argv, stdout, stderr)
