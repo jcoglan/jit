@@ -48,5 +48,75 @@ describe Command::CherryPick do
         "f.txt" => "four",
         "g.txt" => "five"
     end
+
+    it "fails to apply a content conflict" do
+      jit_cmd "cherry-pick", "topic^^"
+      assert_status 1
+
+      short = repo.database.short_oid(resolve_revision("topic^^"))
+
+      assert_workspace "f.txt" => <<~FILE
+          <<<<<<< HEAD
+          four=======
+          six>>>>>>> #{ short }... six
+        FILE
+
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        UU f.txt
+      STATUS
+    end
+
+    it "fails to apply a modify/delete conflict" do
+      jit_cmd "cherry-pick", "topic"
+      assert_status 1
+
+      assert_workspace \
+        "f.txt" => "four",
+        "g.txt" => "eight"
+
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        DU g.txt
+      STATUS
+    end
+
+    it "continues a conflicted cherry-pick" do
+      jit_cmd "cherry-pick", "topic"
+      jit_cmd "add", "g.txt"
+
+      jit_cmd "cherry-pick", "--continue"
+      assert_status 0
+
+      commits = RevList.new(repo, ["@~3.."]).to_a
+      assert_equal [commits[1].oid], commits[0].parents
+
+      assert_equal ["eight", "four", "three"],
+                   commits.map { |commit| commit.message.strip }
+
+      assert_index \
+        "f.txt" => "four",
+        "g.txt" => "eight"
+
+      assert_workspace \
+        "f.txt" => "four",
+        "g.txt" => "eight"
+    end
+
+    it "commits after a conflicted cherry-pick" do
+      jit_cmd "cherry-pick", "topic"
+      jit_cmd "add", "g.txt"
+
+      jit_cmd "commit"
+      assert_status 0
+
+      commits = RevList.new(repo, ["@~3.."]).to_a
+      assert_equal [commits[1].oid], commits[0].parents
+
+      assert_equal ["eight", "four", "three"],
+                   commits.map { |commit| commit.message.strip }
+    end
   end
 end
