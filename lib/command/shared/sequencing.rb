@@ -70,6 +70,7 @@ module Command
 
       case pending_commit.merge_type
       when :cherry_pick then write_cherry_pick_commit
+      when :revert      then write_revert_commit
       end
 
       sequencer.load
