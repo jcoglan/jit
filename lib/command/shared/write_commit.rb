@@ -82,15 +82,22 @@ module Command
       @pending_commit ||= repo.pending_commit
     end
 
-    def resume_merge
+    def resume_merge(type)
+      case type
+      when :merge then write_merge_commit
+      end
+
+      exit 0
+    end
+
+    def write_merge_commit
       handle_conflicted_index
 
       parents = [repo.refs.read_head, pending_commit.merge_oid]
       message = compose_merge_message(MERGE_NOTES)
       write_commit(parents, message)
 
-      pending_commit.clear
-      exit 0
+      pending_commit.clear(:merge)
     end
 
     def compose_merge_message(notes = nil)
