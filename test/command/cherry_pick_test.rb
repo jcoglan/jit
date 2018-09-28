@@ -150,5 +150,91 @@ describe Command::CherryPick do
         DU g.txt
       STATUS
     end
+
+    it "stops when a range of commits includes a conflict" do
+      jit_cmd "cherry-pick", "..topic"
+      assert_status 1
+
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        UU f.txt
+      STATUS
+    end
+
+    it "refuses to commit in a conflicted state" do
+      jit_cmd "cherry-pick", "..topic"
+      jit_cmd "commit"
+
+      assert_status 128
+
+      assert_stderr <<~ERROR
+        error: Committing is not possible because you have unmerged files.
+        hint: Fix them up in the work tree, and then use 'jit add/rm <file>'
+        hint: as appropriate to mark resolution and make a commit.
+        fatal: Exiting because of an unresolved conflict.
+      ERROR
+    end
+
+    it "refuses to continue in a conflicted state" do
+      jit_cmd "cherry-pick", "..topic"
+      jit_cmd "cherry-pick", "--continue"
+
+      assert_status 128
+
+      assert_stderr <<~ERROR
+        error: Committing is not possible because you have unmerged files.
+        hint: Fix them up in the work tree, and then use 'jit add/rm <file>'
+        hint: as appropriate to mark resolution and make a commit.
+        fatal: Exiting because of an unresolved conflict.
+      ERROR
+    end
+
+    it "can continue after resolving the conflicts" do
+      jit_cmd "cherry-pick", "..topic"
+
+      write_file "f.txt", "six"
+      jit_cmd "add", "f.txt"
+
+      jit_cmd "cherry-pick", "--continue"
+      assert_status 0
+
+      revs = RevList.new(repo, ["@~5.."])
+
+      assert_equal ["eight", "seven", "six", "five", "four"],
+                   revs.map { |commit| commit.message.strip }
+
+      assert_index \
+        "f.txt" => "six",
+        "g.txt" => "eight"
+
+      assert_workspace \
+        "f.txt" => "six",
+        "g.txt" => "eight"
+    end
+
+    it "can continue after commiting the resolved tree" do
+      jit_cmd "cherry-pick", "..topic"
+
+      write_file "f.txt", "six"
+      jit_cmd "add", "f.txt"
+      jit_cmd "commit"
+
+      jit_cmd "cherry-pick", "--continue"
+      assert_status 0
+
+      revs = RevList.new(repo, ["@~5.."])
+
+      assert_equal ["eight", "seven", "six", "five", "four"],
+                   revs.map { |commit| commit.message.strip }
+
+      assert_index \
+        "f.txt" => "six",
+        "g.txt" => "eight"
+
+      assert_workspace \
+        "f.txt" => "six",
+        "g.txt" => "eight"
+    end
   end
 end
