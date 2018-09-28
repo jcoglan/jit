@@ -7,11 +7,14 @@ describe Command::CherryPick do
   include CommandHelper
 
   def commit_tree(message, files)
+    @time ||= Time.now
+    @time +=  10
+
     files.each do |path, contents|
       write_file path, contents
     end
     jit_cmd "add", "."
-    commit message
+    commit message, @time
   end
 
   describe "with two branches" do
@@ -117,6 +120,35 @@ describe Command::CherryPick do
 
       assert_equal ["eight", "four", "three"],
                    commits.map { |commit| commit.message.strip }
+    end
+
+    it "applies multiple non-conflicting commits" do
+      jit_cmd "cherry-pick", "topic~3", "topic^", "topic"
+      assert_status 0
+
+      revs = RevList.new(repo, ["@~4.."])
+
+      assert_equal ["eight", "seven", "five", "four"],
+                   revs.map { |commit| commit.message.strip }
+
+      assert_index \
+        "f.txt" => "four",
+        "g.txt" => "eight"
+
+      assert_workspace \
+        "f.txt" => "four",
+        "g.txt" => "eight"
+    end
+
+    it "stops when a list of commits includes a conflict" do
+      jit_cmd "cherry-pick", "topic^", "topic~3"
+      assert_status 1
+
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        DU g.txt
+      STATUS
     end
   end
 end
