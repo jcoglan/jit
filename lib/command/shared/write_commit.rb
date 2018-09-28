@@ -94,6 +94,7 @@ module Command
       case type
       when :merge       then write_merge_commit
       when :cherry_pick then write_cherry_pick_commit
+      when :revert      then write_revert_commit
       end
 
       exit 0
@@ -125,6 +126,16 @@ module Command
       repo.database.store(picked)
       repo.refs.update_head(picked.oid)
       pending_commit.clear(:cherry_pick)
+    end
+
+    def write_revert_commit
+      handle_conflicted_index
+
+      parents = [repo.refs.read_head]
+      message = compose_merge_message
+      write_commit(parents, message)
+
+      pending_commit.clear(:revert)
     end
 
     def compose_merge_message(notes = nil)
