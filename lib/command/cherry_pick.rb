@@ -2,6 +2,7 @@ require_relative "./base"
 require_relative "./shared/write_commit"
 require_relative "../merge/inputs"
 require_relative "../merge/resolve"
+require_relative "../repository/sequencer"
 require_relative "../rev_list"
 
 module Command
@@ -23,16 +24,24 @@ module Command
     def run
       handle_continue if @options[:mode] == :continue
 
-      commits = RevList.new(repo, @args.reverse, :walk => false)
-      commits.reverse_each { |commit| pick(commit) }
-
-      exit 0
+      sequencer.start
+      store_commit_sequence
+      resume_sequencer
     end
 
     private
 
     def merge_type
       :cherry_pick
+    end
+
+    def sequencer
+      @sequencer ||= Repository::Sequencer.new(repo)
+    end
+
+    def store_commit_sequence
+      commits = RevList.new(repo, @args.reverse, :walk => false)
+      commits.reverse_each { |commit| sequencer.pick(commit) }
     end
 
     def pick(commit)
@@ -67,6 +76,7 @@ module Command
     end
 
     def fail_on_conflict(inputs, message)
+      sequencer.dump
       pending_commit.start(inputs.right_oid, merge_type)
 
       edit_file(pending_commit.message_path) do |editor|
@@ -90,11 +100,26 @@ module Command
 
     def handle_continue
       repo.index.load
-      write_cherry_pick_commit
-      exit 0
+      write_cherry_pick_commit if pending_commit.in_progress?
+
+      sequencer.load
+      sequencer.drop_command
+      resume_sequencer
+
     rescue Repository::PendingCommit::Error => error
       @stderr.puts "fatal: #{ error.message }"
       exit 128
+    end
+
+    def resume_sequencer
+      loop do
+        break unless commit = sequencer.next_command
+        pick(commit)
+        sequencer.drop_command
+      end
+
+      sequencer.quit
+      exit 0
     end
 
   end
