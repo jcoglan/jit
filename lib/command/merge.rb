@@ -131,7 +131,7 @@ module Command
 
     def handle_continue
       repo.index.load
-      resume_merge
+      resume_merge(:merge)
     rescue Repository::PendingCommit::Error => error
       @stderr.puts "fatal: #{ error.message }"
       exit 128
