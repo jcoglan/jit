@@ -27,7 +27,11 @@ class Repository
     end
 
     def pick(commit)
-      @commands.push(commit)
+      @commands.push([:pick, commit])
+    end
+
+    def revert(commit)
+      @commands.push([:revert, commit])
     end
 
     def next_command
@@ -44,18 +48,20 @@ class Repository
       return unless File.file?(@todo_path)
 
       @commands = File.read(@todo_path).lines.map do |line|
-        oid, _ = /^pick (\S+) (.*)$/.match(line).captures
-        oids = @repo.database.prefix_match(oid)
-        @repo.database.load(oids.first)
+        action, oid, _ = /^(\S+) (\S+) (.*)$/.match(line).captures
+
+        oids   = @repo.database.prefix_match(oid)
+        commit = @repo.database.load(oids.first)
+        [action.to_sym, commit]
       end
     end
 
     def dump
       return unless @todo_file
 
-      @commands.each do |commit|
+      @commands.each do |action, commit|
         short = @repo.database.short_oid(commit.oid)
-        @todo_file.write("pick #{ short } #{ commit.title_line }")
+        @todo_file.write("#{ action } #{ short } #{ commit.title_line }")
       end
 
       @todo_file.commit
