@@ -33,7 +33,9 @@ module Command
       repo.index.load
 
       handle_amend if @options[:amend]
-      resume_merge if pending_commit.in_progress?
+
+      merge_type = pending_commit.merge_type
+      resume_merge(merge_type) if merge_type
 
       parent  = repo.refs.read_head
       message = compose_message(read_message || reused_message)
