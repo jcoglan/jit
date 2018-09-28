@@ -15,6 +15,14 @@ module Command
       and try again.
     MSG
 
+    CHERRY_PICK_NOTES = <<~MSG
+
+      It looks like you may be committing a cherry-pick.
+      If this is not correct, please remove the file
+      \t.git/CHERRY_PICK_HEAD
+      and try again.
+    MSG
+
     def define_write_commit_options
       @options[:edit] = :auto
       @parser.on("-e", "--[no-]edit") { |value| @options[:edit] = value }
@@ -84,7 +92,8 @@ module Command
 
     def resume_merge(type)
       case type
-      when :merge then write_merge_commit
+      when :merge       then write_merge_commit
+      when :cherry_pick then write_cherry_pick_commit
       end
 
       exit 0
@@ -98,6 +107,24 @@ module Command
       write_commit(parents, message)
 
       pending_commit.clear(:merge)
+    end
+
+    def write_cherry_pick_commit
+      handle_conflicted_index
+
+      parents = [repo.refs.read_head]
+      message = compose_merge_message(CHERRY_PICK_NOTES)
+
+      pick_oid = pending_commit.merge_oid(:cherry_pick)
+      commit   = repo.database.load(pick_oid)
+
+      picked = Database::Commit.new(parents, write_tree.oid,
+                                    commit.author, current_author,
+                                    message)
+
+      repo.database.store(picked)
+      repo.refs.update_head(picked.oid)
+      pending_commit.clear(:cherry_pick)
     end
 
     def compose_merge_message(notes = nil)
