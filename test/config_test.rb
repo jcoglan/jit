@@ -53,33 +53,35 @@ describe Config do
       assert_nil @config.get(%w[branch Master remote])
     end
 
-    it "adds multiple values for a key" do
-      key = %w[remote origin fetch]
+    describe "with multi-valued keys" do
+      before do
+        @key = %w[remote origin fetch]
+        @config.add(@key, "master")
+        @config.add(@key, "topic")
+      end
 
-      @config.add(key, "master")
-      @config.add(key, "topic")
+      it "adds multiple values for a key" do
+        assert_equal "topic", @config.get(@key)
+        assert_equal ["master", "topic"], @config.get_all(@key)
+      end
 
-      assert_equal "topic", @config.get(key)
-      assert_equal ["master", "topic"], @config.get_all(key)
-    end
+      it "refuses to set a value" do
+        assert_raises(Config::Conflict) { @config.set(@key, "new-value") }
+      end
 
-    it "refuses to set a value for a multi-valued key" do
-      key = %w[remote origin fetch]
+      it "replaces all the values" do
+        @config.replace_all(@key, "new-value")
+        assert_equal ["new-value"], @config.get_all(@key)
+      end
 
-      @config.add(key, "master")
-      @config.add(key, "topic")
+      it "refuses to unset a value" do
+        assert_raises(Config::Conflict) { @config.unset(@key) }
+      end
 
-      assert_raises(Config::Conflict) { @config.set(key, "new-value") }
-    end
-
-    it "replaces all the values for a multi-valued key" do
-      key = %w[remote origin fetch]
-
-      @config.add(key, "master")
-      @config.add(key, "topic")
-      @config.replace_all(key, "new-value")
-
-      assert_equal ["new-value"], @config.get_all(key)
+      it "unsets all the values" do
+        @config.unset_all(@key)
+        assert_equal [], @config.get_all(@key)
+      end
     end
   end
 
@@ -162,6 +164,15 @@ describe Config do
       assert_file <<~CONFIG
         [core]
         \teditor = ed
+      CONFIG
+    end
+
+    it "unsets a variable" do
+      @config.set(%w[merge conflictstyle], "diff3")
+      @config.unset(%w[merge ConflictStyle])
+      @config.save
+
+      assert_file <<~CONFIG
       CONFIG
     end
 
