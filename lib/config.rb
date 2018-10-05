@@ -6,6 +6,9 @@ class Config
   BLANK_LINE    = /^\s*($|#|;)/
   INTEGER       = /^-?[1-9][0-9]*$/
 
+  VALID_SECTION  = /^[a-z0-9-]+$/i
+  VALID_VARIABLE = /^[a-z][a-z0-9-]*$/i
+
   Conflict   = Class.new(StandardError)
   ParseError = Class.new(StandardError)
 
@@ -36,6 +39,10 @@ class Config
     def self.serialize(name, value)
       "\t#{ name } = #{ value }\n"
     end
+  end
+
+  def self.valid_key?(key)
+    VALID_SECTION =~ key.first and VALID_VARIABLE =~ key.last
   end
 
   def initialize(path)
