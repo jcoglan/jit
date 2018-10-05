@@ -106,6 +106,24 @@ class Config
     add_variable(section, key, var, value)
   end
 
+  def unset(key)
+    unset_all(key) do |lines|
+      raise Conflict, "#{ key } has multiple values" if lines.size > 1
+    end
+  end
+
+  def unset_all(key)
+    key, var       = split_key(key)
+    section, lines = find_lines(key, var)
+
+    return unless section
+    yield lines if block_given?
+
+    remove_all(section, lines)
+    lines = lines_for(section)
+    remove_section(key) if lines.size == 1
+  end
+
   def remove_section(key)
     key = Section.normalize(key)
     @lines.delete(key) ? true : false
