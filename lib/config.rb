@@ -106,6 +106,27 @@ class Config
     add_variable(section, key, var, value)
   end
 
+  def remove_section(key)
+    key = Section.normalize(key)
+    @lines.delete(key) ? true : false
+  end
+
+  def subsections(name)
+    name, _  = Section.normalize([name])
+    sections = []
+
+    @lines.each_key do |main, sub|
+      sections.push(sub) if main == name and sub != ""
+    end
+
+    sections
+  end
+
+  def section?(key)
+    key = Section.normalize(key)
+    @lines.has_key?(key)
+  end
+
   private
 
   def line_count
