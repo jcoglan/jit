@@ -3,6 +3,7 @@ require_relative "./command/branch"
 require_relative "./command/checkout"
 require_relative "./command/cherry_pick"
 require_relative "./command/commit"
+require_relative "./command/config"
 require_relative "./command/diff"
 require_relative "./command/init"
 require_relative "./command/log"
@@ -17,6 +18,7 @@ module Command
 
   COMMANDS = {
     "init"        => Init,
+    "config"      => Config,
     "add"         => Add,
     "rm"          => Rm,
     "commit"      => Commit,

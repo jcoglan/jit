@@ -1,3 +1,4 @@
+require_relative "./config/stack"
 require_relative "./database"
 require_relative "./index"
 require_relative "./refs"
@@ -13,6 +14,10 @@ class Repository
 
   def initialize(git_path)
     @git_path = git_path
+  end
+
+  def config
+    @config ||= Config::Stack.new(@git_path)
   end
 
   def database
