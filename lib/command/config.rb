@@ -12,9 +12,11 @@ module Command
         @options[:file] = file
       end
 
-      @parser.on("--add <name>")         { |name| @options[:add]     = name }
-      @parser.on("--replace-all <name>") { |name| @options[:replace] = name }
-      @parser.on("--get-all <name>")     { |name| @options[:get_all] = name }
+      @parser.on("--add <name>")         { |name| @options[:add]       = name }
+      @parser.on("--replace-all <name>") { |name| @options[:replace]   = name }
+      @parser.on("--get-all <name>")     { |name| @options[:get_all]   = name }
+      @parser.on("--unset <name>")       { |name| @options[:unset]     = name }
+      @parser.on("--unset-all <name>")   { |name| @options[:unset_all] = name }
 
       @parser.on "--remove-section <name>" do |name|
         @options[:remove_section] = name
@@ -25,6 +27,8 @@ module Command
       add_variable     if @options[:add]
       replace_variable if @options[:replace]
       get_all_values   if @options[:get_all]
+      unset_single     if @options[:unset]
+      unset_all        if @options[:unset_all]
       remove_section   if @options[:remove_section]
 
       key, value = parse_key(@args[0]), @args[1]
@@ -50,6 +54,16 @@ module Command
     def replace_variable
       key = parse_key(@options[:replace])
       edit_config { |config| config.replace_all(key, @args[0]) }
+    end
+
+    def unset_single
+      key = parse_key(@options[:unset])
+      edit_config { |config| config.unset(key) }
+    end
+
+    def unset_all
+      key = parse_key(@options[:unset_all])
+      edit_config { |config| config.unset_all(key) }
     end
 
     def remove_section
