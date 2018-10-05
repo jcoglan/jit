@@ -37,51 +37,76 @@ describe Command::Config do
     assert_stdout "git@github.com:jcoglan.jit\n"
   end
 
-  it "returns the last value of a multi-valued variable" do
-    jit_cmd "config", "--add", "remote.origin.fetch", "master"
-    jit_cmd "config", "--add", "remote.origin.fetch", "topic"
+  it "unsets a variable" do
+    jit_cmd "config", "core.editor", "ed"
+    jit_cmd "config", "--unset", "core.editor"
 
-    jit_cmd "config", "remote.origin.fetch"
-    assert_status 0
-    assert_stdout "topic\n"
+    jit_cmd "config", "--local", "Core.Editor"
+    assert_status 1
   end
 
-  it "returns all the values of a multi-valued variable" do
-    jit_cmd "config", "--add", "remote.origin.fetch", "master"
-    jit_cmd "config", "--add", "remote.origin.fetch", "topic"
+  describe "with multi-valued variables" do
+    before do
+      jit_cmd "config", "--add", "remote.origin.fetch", "master"
+      jit_cmd "config", "--add", "remote.origin.fetch", "topic"
+    end
 
-    jit_cmd "config", "--get-all", "remote.origin.fetch"
-    assert_status 0
+    it "returns the last value" do
+      jit_cmd "config", "remote.origin.fetch"
+      assert_status 0
+      assert_stdout "topic\n"
+    end
 
-    assert_stdout <<~MSG
-      master
-      topic
-    MSG
-  end
+    it "returns all the values" do
+      jit_cmd "config", "--get-all", "remote.origin.fetch"
+      assert_status 0
 
-  it "returns 5 on trying to set a multi-valued variable" do
-    jit_cmd "config", "--add", "remote.origin.fetch", "master"
-    jit_cmd "config", "--add", "remote.origin.fetch", "topic"
+      assert_stdout <<~MSG
+        master
+        topic
+      MSG
+    end
 
-    jit_cmd "config", "remote.origin.fetch", "new-value"
-    assert_status 5
+    it "returns 5 on trying to set a variable" do
+      jit_cmd "config", "remote.origin.fetch", "new-value"
+      assert_status 5
 
-    jit_cmd "config", "--get-all", "remote.origin.fetch"
+      jit_cmd "config", "--get-all", "remote.origin.fetch"
+      assert_status 0
 
-    assert_stdout <<~MSG
-      master
-      topic
-    MSG
-  end
+      assert_stdout <<~MSG
+        master
+        topic
+      MSG
+    end
 
-  it "replaces a multi-valued variable" do
-    jit_cmd "config", "--add", "remote.origin.fetch", "master"
-    jit_cmd "config", "--add", "remote.origin.fetch", "topic"
-    jit_cmd "config", "--replace-all", "remote.origin.fetch", "new-value"
+    it "replaces a variable" do
+      jit_cmd "config", "--replace-all", "remote.origin.fetch", "new-value"
 
-    jit_cmd "config", "--get-all", "remote.origin.fetch"
-    assert_status 0
-    assert_stdout "new-value\n"
+      jit_cmd "config", "--get-all", "remote.origin.fetch"
+      assert_status 0
+      assert_stdout "new-value\n"
+    end
+
+    it "returns 5 on trying to unset a variable" do
+      jit_cmd "config", "--unset", "remote.origin.fetch"
+      assert_status 5
+
+      jit_cmd "config", "--get-all", "remote.origin.fetch"
+      assert_status 0
+
+      assert_stdout <<~MSG
+        master
+        topic
+      MSG
+    end
+
+    it "unsets a variable" do
+      jit_cmd "config", "--unset-all", "remote.origin.fetch"
+
+      jit_cmd "config", "--get-all", "remote.origin.fetch"
+      assert_status 1
+    end
   end
 
   it "removes a section" do
