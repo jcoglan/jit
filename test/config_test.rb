@@ -141,6 +141,30 @@ describe Config do
       CONFIG
     end
 
+    it "removes a section" do
+      @config.set(%w[core editor], "ed")
+      @config.set(%w[remote origin url], "ssh://example.com/repo")
+      @config.remove_section(%w[core])
+      @config.save
+
+      assert_file <<~CONFIG
+        [remote "origin"]
+        \turl = ssh://example.com/repo
+      CONFIG
+    end
+
+    it "removes a subsection" do
+      @config.set(%w[core editor], "ed")
+      @config.set(%w[remote origin url], "ssh://example.com/repo")
+      @config.remove_section(%w[remote origin])
+      @config.save
+
+      assert_file <<~CONFIG
+        [core]
+        \teditor = ed
+      CONFIG
+    end
+
     it "retrieves persisted settings" do
       @config.set(%w[core editor], "ed")
       @config.save
