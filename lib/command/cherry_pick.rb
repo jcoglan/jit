@@ -34,7 +34,8 @@ module Command
     end
 
     def pick_merge_inputs(commit)
-      short = repo.database.short_oid(commit.oid)
+      short  = repo.database.short_oid(commit.oid)
+      parent = select_parent(commit)
 
       left_name  = Refs::HEAD
       left_oid   = repo.refs.read_head
@@ -43,7 +44,7 @@ module Command
 
       ::Merge::CherryPick.new(left_name, right_name,
                               left_oid, right_oid,
-                              [commit.parent])
+                              [parent])
     end
 
   end

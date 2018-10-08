@@ -1,4 +1,6 @@
 require "fileutils"
+
+require_relative "../config"
 require_relative "../lockfile"
 
 class Repository
@@ -12,18 +14,28 @@ class Repository
       @abort_path = @pathname.join("abort-safety")
       @head_path  = @pathname.join("head")
       @todo_path  = @pathname.join("todo")
+      @config     = Config.new(@pathname.join("opts"))
       @todo_file  = nil
       @commands   = []
     end
 
-    def start
+    def start(options)
       Dir.mkdir(@pathname)
 
       head_oid = @repo.refs.read_head
       write_file(@head_path, head_oid)
       write_file(@abort_path, head_oid)
 
+      @config.open_for_update
+      options.each { |key, value| @config.set(["options", key], value) }
+      @config.save
+
       open_todo_file
+    end
+
+    def get_option(name)
+      @config.open
+      @config.get(["options", name])
     end
 
     def pick(commit)
