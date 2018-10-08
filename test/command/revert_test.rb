@@ -275,4 +275,103 @@ describe Command::Revert do
       end
     end
   end
+
+  describe "with merges" do
+
+    #   f---f---f---o---o---h [master]
+    #        \     /   /
+    #         g---g---h [topic]
+
+    before do
+      ["one", "two", "three"].each do |message|
+        commit_tree message, "f.txt" => message
+      end
+
+      jit_cmd "branch", "topic", "@^"
+      jit_cmd "checkout", "topic"
+      commit_tree "four", "g.txt" => "four"
+      commit_tree "five", "g.txt" => "five"
+      commit_tree "six",  "h.txt" => "six"
+
+      jit_cmd "checkout", "master"
+
+      jit_cmd "merge", "topic^", "-m", "merge topic^"
+      jit_cmd "merge", "topic", "-m", "merge topic"
+
+      commit_tree "seven", "h.txt" => "seven"
+    end
+
+    it "refuses to revert a merge without specifying a parent" do
+      jit_cmd "revert", "@^"
+      assert_status 1
+
+      oid = resolve_revision "@^"
+
+      assert_stderr <<~ERROR
+        error: commit #{ oid } is a merge but no -m option was given
+      ERROR
+    end
+
+    it "refuses to revert a non-merge commit with mainline" do
+      jit_cmd "revert", "-m", "1", "@"
+      assert_status 1
+
+      oid = resolve_revision "@"
+
+      assert_stderr <<~ERROR
+        error: mainline was specified but commit #{ oid } is not a merge
+      ERROR
+    end
+
+    it "reverts a merge based on its first parent" do
+      jit_cmd "revert", "-m", "1", "@~2"
+      assert_status 0
+
+      assert_index \
+        "f.txt" => "three",
+        "h.txt" => "seven"
+
+      assert_workspace \
+        "f.txt" => "three",
+        "h.txt" => "seven"
+    end
+
+    it "reverts a merge based on its second parent" do
+      jit_cmd "revert", "-m", "2", "@~2"
+      assert_status 0
+
+      assert_index \
+        "f.txt" => "two",
+        "g.txt" => "five",
+        "h.txt" => "seven"
+
+      assert_workspace \
+        "f.txt" => "two",
+        "g.txt" => "five",
+        "h.txt" => "seven"
+    end
+
+    it "resumes reverting merges after a conflict" do
+      jit_cmd "revert", "-m", "1", "@^", "@^^"
+      assert_status 1
+
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        UD h.txt
+      STATUS
+
+      jit_cmd "rm", "-f", "h.txt"
+      jit_cmd "revert", "--continue"
+      assert_status 0
+
+      revs = RevList.new(repo, ["@~3.."])
+
+      assert_equal ['Revert "merge topic^"', 'Revert "merge topic"', "seven"],
+                   revs.map { |commit| commit.title_line.strip }
+
+      assert_index "f.txt" => "three"
+      assert_workspace "f.txt" => "three"
+    end
+  end
 end
