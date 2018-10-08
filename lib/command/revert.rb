@@ -42,7 +42,7 @@ module Command
       left_name  = Refs::HEAD
       left_oid   = repo.refs.read_head
       right_name = "parent of #{ short }... #{ commit.title_line.strip }"
-      right_oid  = commit.parent
+      right_oid  = select_parent(commit)
 
       ::Merge::CherryPick.new(left_name, right_name,
                               left_oid, right_oid,
