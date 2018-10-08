@@ -288,4 +288,113 @@ describe Command::CherryPick do
       end
     end
   end
+
+  describe "with merges" do
+
+    #   f---f---f---f [master]
+    #        \
+    #         g---h---o---o [topic]
+    #          \     /   /
+    #           j---j---f [side]
+
+    before do
+      ["one", "two", "three", "four"].each do |message|
+        commit_tree message, "f.txt" => message
+      end
+
+      jit_cmd "branch", "topic", "@~2"
+      jit_cmd "checkout", "topic"
+      commit_tree "five", "g.txt" => "five"
+      commit_tree "six",  "h.txt" => "six"
+
+      jit_cmd "branch", "side", "@^"
+      jit_cmd "checkout", "side"
+      commit_tree "seven", "j.txt" => "seven"
+      commit_tree "eight", "j.txt" => "eight"
+      commit_tree "nine",  "f.txt" => "nine"
+
+      jit_cmd "checkout", "topic"
+      jit_cmd "merge", "side^", "-m", "merge side^"
+      jit_cmd "merge", "side", "-m", "merge side"
+
+      jit_cmd "checkout", "master"
+    end
+
+    it "refuses to cherry-pick a merge without specifying a parent" do
+      jit_cmd "cherry-pick", "topic"
+      assert_status 1
+
+      oid = resolve_revision "topic"
+
+      assert_stderr <<~ERROR
+        error: commit #{ oid } is a merge but no -m option was given
+      ERROR
+    end
+
+    it "refuses to cherry-pick a non-merge commit with mainline" do
+      jit_cmd "cherry-pick", "-m", "1", "side"
+      assert_status 1
+
+      oid = resolve_revision "side"
+
+      assert_stderr <<~ERROR
+        error: mainline was specified but commit #{ oid } is not a merge
+      ERROR
+    end
+
+    it "cherry-picks a merge based on its first parent" do
+      jit_cmd "cherry-pick", "-m", "1", "topic^"
+      assert_status 0
+
+      assert_index \
+        "f.txt" => "four",
+        "j.txt" => "eight"
+
+      assert_workspace \
+        "f.txt" => "four",
+        "j.txt" => "eight"
+    end
+
+    it "cherry-picks a merge based on its second parent" do
+      jit_cmd "cherry-pick", "-m", "2", "topic^"
+      assert_status 0
+
+      assert_index \
+        "f.txt" => "four",
+        "h.txt" => "six"
+
+      assert_workspace \
+        "f.txt" => "four",
+        "h.txt" => "six"
+    end
+
+    it "resumes cherry-picking merges after a conflict" do
+      jit_cmd "cherry-pick", "-m", "1", "topic", "topic^"
+      assert_status 1
+
+      jit_cmd "status", "--porcelain"
+
+      assert_stdout <<~STATUS
+        UU f.txt
+      STATUS
+
+      write_file "f.txt", "resolved"
+      jit_cmd "add", "f.txt"
+      jit_cmd "cherry-pick", "--continue"
+      assert_status 0
+
+      revs = RevList.new(repo, ["@~3.."])
+
+      assert_equal ["merge side^", "merge side", "four"],
+                   revs.map { |commit| commit.message.strip }
+
+      assert_index \
+        "f.txt" => "resolved",
+        "j.txt" => "eight"
+
+      assert_workspace \
+        "f.txt" => "resolved",
+        "j.txt" => "eight"
+    end
+  end
 end
