@@ -69,8 +69,11 @@ module Command
     end
 
     def current_author
-      name  = @env.fetch("GIT_AUTHOR_NAME")
-      email = @env.fetch("GIT_AUTHOR_EMAIL")
+      config_name  = repo.config.get(["user", "name"])
+      config_email = repo.config.get(["user", "email"])
+
+      name  = @env.fetch("GIT_AUTHOR_NAME", config_name)
+      email = @env.fetch("GIT_AUTHOR_EMAIL", config_email)
 
       Database::Author.new(name, email, Time.now)
     end

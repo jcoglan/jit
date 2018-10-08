@@ -91,6 +91,23 @@ describe Command::Commit do
     end
   end
 
+  describe "configuring an author" do
+    before do
+      jit_cmd "config", "user.name", "A. N. User"
+      jit_cmd "config", "user.email", "user@example.com"
+    end
+
+    it "uses the author information from the config" do
+      write_file "file.txt", "1"
+      jit_cmd "add", "."
+      commit "first", nil, false
+
+      head = load_commit("@")
+      assert_equal "A. N. User", head.author.name
+      assert_equal "user@example.com", head.author.email
+    end
+  end
+
   describe "reusing messages" do
     before do
       write_file "file.txt", "1"
