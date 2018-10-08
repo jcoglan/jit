@@ -4,6 +4,14 @@ require_relative "../../diff"
 module Command
   module PrintDiff
 
+    DIFF_FORMATS = {
+      :context => :normal,
+      :meta    => :bold,
+      :frag    => :cyan,
+      :old     => :red,
+      :new     => :green
+    }
+
     NULL_OID  = "0" * 40
     NULL_PATH = "/dev/null"
 
@@ -31,8 +39,15 @@ module Command
       Target.new(path, NULL_OID, nil, "")
     end
 
+    def diff_fmt(name, text)
+      key   = ["color", "diff", name]
+      style = repo.config.get(key)&.split(/ +/) || DIFF_FORMATS.fetch(name)
+
+      fmt(style, text)
+    end
+
     def header(string)
-      puts fmt(:bold, string)
+      puts diff_fmt(:meta, string)
     end
 
     def short(oid)
@@ -105,7 +120,7 @@ module Command
     end
 
     def print_diff_hunk(hunk)
-      puts fmt(:cyan, hunk.header)
+      puts diff_fmt(:frag, hunk.header)
       hunk.edits.each { |edit| print_diff_edit(edit) }
     end
 
@@ -113,9 +128,9 @@ module Command
       text = edit.to_s.rstrip
 
       case edit.type
-      when :eql then puts text
-      when :ins then puts fmt(:green, text)
-      when :del then puts fmt(:red, text)
+      when :eql then puts diff_fmt(:context, text)
+      when :ins then puts diff_fmt(:new, text)
+      when :del then puts diff_fmt(:old, text)
       end
     end
 
