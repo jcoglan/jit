@@ -60,9 +60,11 @@ module CommandHelper
     @cmd = Command.execute(repo_path.to_s, @env, argv, @stdout, @stderr)
   end
 
-  def commit(message, time = nil)
-    set_env("GIT_AUTHOR_NAME", "A. U. Thor")
-    set_env("GIT_AUTHOR_EMAIL", "author@example.com")
+  def commit(message, time = nil, author = true)
+    if author
+      set_env("GIT_AUTHOR_NAME", "A. U. Thor")
+      set_env("GIT_AUTHOR_EMAIL", "author@example.com")
+    end
     Time.stub(:now, time || Time.now) { jit_cmd "commit", "-m", message }
   end
 
