@@ -68,7 +68,8 @@ module Command
     end
 
     def editor_command
-      @env["GIT_EDITOR"] || @env["VISUAL"] || @env["EDITOR"]
+      core_editor = repo.config.get(["core", "editor"])
+      @env["GIT_EDITOR"] || core_editor || @env["VISUAL"] || @env["EDITOR"]
     end
 
     def fmt(style, string)
