@@ -2,6 +2,7 @@ require_relative "./config/stack"
 require_relative "./database"
 require_relative "./index"
 require_relative "./refs"
+require_relative "./remotes"
 require_relative "./workspace"
 
 require_relative "./repository/hard_reset"
@@ -42,6 +43,10 @@ class Repository
 
   def refs
     @refs ||= Refs.new(@git_path)
+  end
+
+  def remotes
+    @remotes ||= Remotes.new(config.file(:local))
   end
 
   def status(commit_oid = nil)

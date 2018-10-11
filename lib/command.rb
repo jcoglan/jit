@@ -8,6 +8,7 @@ require_relative "./command/diff"
 require_relative "./command/init"
 require_relative "./command/log"
 require_relative "./command/merge"
+require_relative "./command/remote"
 require_relative "./command/reset"
 require_relative "./command/revert"
 require_relative "./command/rm"
@@ -30,7 +31,8 @@ module Command
     "log"         => Log,
     "merge"       => Merge,
     "cherry-pick" => CherryPick,
-    "revert"      => Revert
+    "revert"      => Revert,
+    "remote"      => Remote
   }
 
   def self.execute(dir, env, argv, stdout, stderr)
