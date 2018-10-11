@@ -3,6 +3,8 @@ require_relative "./remotes/refspec"
 require_relative "./remotes/remote"
 
 class Remotes
+  DEFAULT_REMOTE = "origin"
+
   InvalidRemote = Class.new(StandardError)
 
   def initialize(config)
