@@ -18,8 +18,10 @@ class RevList
     @prune   = []
     @diffs   = {}
     @output  = []
+    @pending = []
 
-    @walk = options.fetch(:walk, true)
+    @objects = options.fetch(:objects, false)
+    @walk    = options.fetch(:walk, true)
 
     revs.each { |rev| handle_revision(rev) }
     handle_revision(Revision::HEAD) if @queue.empty?
@@ -27,7 +29,9 @@ class RevList
 
   def each
     limit_list if @limited
+    mark_edges_uninteresting if @objects
     traverse_commits { |commit| yield commit }
+    traverse_pending { |object| yield object }
   end
 
   def tree_diff(old_oid, new_oid)
@@ -136,6 +140,26 @@ class RevList
     end
   end
 
+  def mark_edges_uninteresting
+    @queue.each do |commit|
+      if marked?(commit.oid, :uninteresting)
+        mark_tree_uninteresting(commit.tree)
+      end
+
+      commit.parents.each do |oid|
+        next unless marked?(oid, :uninteresting)
+
+        parent = load_commit(oid)
+        mark_tree_uninteresting(parent.tree)
+      end
+    end
+  end
+
+  def mark_tree_uninteresting(tree_oid)
+    entry = @repo.database.tree_entry(tree_oid)
+    traverse_tree(entry) { |object| mark(object.oid, :uninteresting) }
+  end
+
   def simplify_commit(commit)
     return commit.parents if @prune.empty?
 
@@ -159,7 +183,33 @@ class RevList
       next if marked?(commit.oid, :uninteresting)
       next if marked?(commit.oid, :treesame)
 
+      @pending.push(@repo.database.tree_entry(commit.tree))
       yield commit
+    end
+  end
+
+  def traverse_pending
+    return unless @objects
+
+    @pending.each do |entry|
+      traverse_tree(entry) do |object|
+        next if marked?(object.oid, :uninteresting)
+        next unless mark(object.oid, :seen)
+
+        yield object
+        true
+      end
+    end
+  end
+
+  def traverse_tree(entry)
+    return unless yield entry
+    return unless entry.tree?
+
+    tree = @repo.database.load(entry.oid)
+
+    tree.each_entry do |name, item|
+      traverse_tree(item) { |object| yield object }
     end
   end
 
