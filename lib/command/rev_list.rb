@@ -8,6 +8,7 @@ module Command
       @parser.on("--all")            { @options[:all]     = true }
       @parser.on("--ignore-missing") { @options[:missing] = true }
       @parser.on("--objects")        { @options[:objects] = true }
+      @parser.on("--reverse")        { @options[:reverse] = true }
 
       @options[:walk] = true
       @parser.on("--do-walk") { @options[:walk] = true  }
@@ -16,7 +17,9 @@ module Command
 
     def run
       rev_list = ::RevList.new(repo, @args, @options)
-      rev_list.each { |object| puts object.oid }
+      iterator = @options[:reverse] ? :reverse_each : :each
+
+      rev_list.__send__(iterator) { |object| puts object.oid }
 
       exit 0
     end
