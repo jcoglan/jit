@@ -24,6 +24,8 @@ class RevList
     @objects = options.fetch(:objects, false)
     @walk    = options.fetch(:walk, true)
 
+    include_refs(repo.refs.list_all_refs) if options[:all]
+
     revs.each { |rev| handle_revision(rev) }
     handle_revision(Revision::HEAD) if @queue.empty?
 
@@ -43,6 +45,11 @@ class RevList
   end
 
   private
+
+  def include_refs(refs)
+    oids = refs.map(&:read_oid).compact
+    oids.each { |oid| handle_revision(oid) }
+  end
 
   def handle_revision(rev)
     if @repo.workspace.stat_file(rev)
