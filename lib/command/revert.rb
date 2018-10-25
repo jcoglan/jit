@@ -17,7 +17,7 @@ module Command
     end
 
     def store_commit_sequence
-      commits = RevList.new(repo, @args, :walk => false)
+      commits = ::RevList.new(repo, @args, :walk => false)
       commits.each { |commit| sequencer.revert(commit) }
     end
 
