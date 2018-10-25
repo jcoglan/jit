@@ -22,6 +22,7 @@ class RevList
     @pending = []
 
     @objects = options.fetch(:objects, false)
+    @missing = options.fetch(:missing, false)
     @walk    = options.fetch(:walk, true)
 
     include_refs(repo.refs.list_all_refs) if options[:all]
@@ -78,6 +79,9 @@ class RevList
       mark(oid, :uninteresting)
       mark_parents_uninteresting(commit)
     end
+
+  rescue Revision::InvalidObject => error
+    raise error unless @missing
   end
 
   def enqueue_commit(commit)
