@@ -69,6 +69,10 @@ class Database
     end
   end
 
+  def tree_entry(oid)
+    Entry.new(oid, Tree::TREE_MODE)
+  end
+
   def short_oid(oid)
     oid[0..6]
   end

@@ -5,8 +5,9 @@ module Command
   class RevList < Base
 
     def define_options
-      @options[:walk] = true
+      @parser.on("--objects") { @options[:objects] = true }
 
+      @options[:walk] = true
       @parser.on("--do-walk") { @options[:walk] = true  }
       @parser.on("--no-walk") { @options[:walk] = false }
     end
