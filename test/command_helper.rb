@@ -54,10 +54,11 @@ module CommandHelper
 
   def jit_cmd(*argv)
     @env    ||= {}
+    @stdin    = StringIO.new
     @stdout   = StringIO.new
     @stderr   = StringIO.new
 
-    @cmd = Command.execute(repo_path.to_s, @env, argv, @stdout, @stderr)
+    @cmd = Command.execute(repo_path.to_s, @env, argv, @stdin, @stdout, @stderr)
   end
 
   def commit(message, time = nil, author = true)
