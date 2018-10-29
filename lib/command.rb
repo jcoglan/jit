@@ -37,7 +37,7 @@ module Command
     "remote"      => Remote
   }
 
-  def self.execute(dir, env, argv, stdout, stderr)
+  def self.execute(dir, env, argv, stdin, stdout, stderr)
     name = argv.first
     args = argv.drop(1)
 
@@ -46,7 +46,7 @@ module Command
     end
 
     command_class = COMMANDS[name]
-    command = command_class.new(dir, env, args, stdout, stderr)
+    command = command_class.new(dir, env, args, stdin, stdout, stderr)
 
     command.execute
     command
