@@ -3,7 +3,7 @@
 require_relative "../lib/command"
 
 begin
-  cmd = Command.execute(Dir.getwd, ENV, ARGV, $stdout, $stderr)
+  cmd = Command.execute(Dir.getwd, ENV, ARGV, $stdin, $stdout, $stderr)
   exit cmd.status
 
 rescue Command::Unknown => error
