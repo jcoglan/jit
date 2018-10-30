@@ -19,6 +19,8 @@ class Database
     "commit" => Commit
   }
 
+  Raw = Struct.new(:type, :size, :data)
+
   def initialize(pathname)
     @pathname = pathname
     @objects  = {}
@@ -37,6 +39,11 @@ class Database
 
   def load(oid)
     @objects[oid] ||= read_object(oid)
+  end
+
+  def load_raw(oid)
+    type, size, scanner = read_object_header(oid)
+    Raw.new(type, size, scanner.rest)
   end
 
   def load_tree_entry(oid, pathname)
@@ -110,12 +117,19 @@ class Database
     @pathname.join(oid[0..1], oid[2..-1])
   end
 
-  def read_object(oid)
-    data    = Zlib::Inflate.inflate(File.read(object_path(oid)))
+  def read_object_header(oid, read_bytes = nil)
+    path    = object_path(oid)
+    data    = Zlib::Inflate.new.inflate(File.read(path, read_bytes))
     scanner = StringScanner.new(data)
 
-    type  = scanner.scan_until(/ /).strip
-    _size = scanner.scan_until(/\0/)[0..-2]
+    type = scanner.scan_until(/ /).strip
+    size = scanner.scan_until(/\0/)[0..-2].to_i
+
+    [type, size, scanner]
+  end
+
+  def read_object(oid)
+    type, _, scanner = read_object_header(oid)
 
     object = TYPES[type].parse(scanner)
     object.oid = oid
