@@ -1,4 +1,5 @@
 require_relative "./pack/writer"
+require_relative "./pack/stream"
 
 module Pack
   HEADER_SIZE   = 12
