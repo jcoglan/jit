@@ -1,3 +1,4 @@
+require_relative "./pack/reader"
 require_relative "./pack/writer"
 require_relative "./pack/stream"
 
@@ -10,4 +11,20 @@ module Pack
   COMMIT = 1
   TREE   = 2
   BLOB   = 3
+
+  TYPE_CODES = {
+    "commit" => COMMIT,
+    "tree"   => TREE,
+    "blob"   => BLOB
+  }
+
+  InvalidPack = Class.new(StandardError)
+
+  Record = Struct.new(:type, :data) do
+    attr_accessor :oid
+
+    def to_s
+      data
+    end
+  end
 end
