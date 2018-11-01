@@ -5,6 +5,7 @@ require_relative "./command/cherry_pick"
 require_relative "./command/commit"
 require_relative "./command/config"
 require_relative "./command/diff"
+require_relative "./command/fetch"
 require_relative "./command/init"
 require_relative "./command/log"
 require_relative "./command/merge"
@@ -14,6 +15,7 @@ require_relative "./command/rev_list"
 require_relative "./command/revert"
 require_relative "./command/rm"
 require_relative "./command/status"
+require_relative "./command/upload_pack"
 
 module Command
   Unknown = Class.new(StandardError)
@@ -34,7 +36,9 @@ module Command
     "merge"       => Merge,
     "cherry-pick" => CherryPick,
     "revert"      => Revert,
-    "remote"      => Remote
+    "remote"      => Remote,
+    "fetch"       => Fetch,
+    "upload-pack" => UploadPack
   }
 
   def self.execute(dir, env, argv, stdin, stdout, stderr)
