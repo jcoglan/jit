@@ -17,8 +17,21 @@ module Command
     end
 
     def build_agent_command(program, url)
-      uri = URI.parse(url)
-      Shellwords.shellsplit(program) + [uri.path]
+      uri  = URI.parse(url)
+      argv = Shellwords.shellsplit(program) + [uri.path]
+
+      case uri.scheme
+      when "file" then argv
+      when "ssh"  then ssh_command(uri, argv)
+      end
+    end
+
+    def ssh_command(uri, argv)
+      ssh  = ["ssh", uri.host]
+      ssh += ["-p", uri.port.to_s] if uri.port
+      ssh += ["-l", uri.user] if uri.user
+
+      ssh + [Shellwords.shelljoin(argv)]
     end
 
     def recv_references
