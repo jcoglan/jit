@@ -5,11 +5,11 @@ module Pack
 
     attr_reader :digest, :offset
 
-    def initialize(input)
+    def initialize(input, buffer = "")
       @input   = input
       @digest  = Digest::SHA1.new
       @offset  = 0
-      @buffer  = new_byte_string
+      @buffer  = new_byte_string.concat(buffer)
       @capture = nil
     end
 
