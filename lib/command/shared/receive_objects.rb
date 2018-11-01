@@ -3,8 +3,8 @@ require_relative "../../pack"
 module Command
   module ReceiveObjects
 
-    def recv_packed_objects
-      stream = Pack::Stream.new(@conn.input)
+    def recv_packed_objects(prefix = "")
+      stream = Pack::Stream.new(@conn.input, prefix)
       reader = Pack::Reader.new(stream)
 
       reader.read_header
