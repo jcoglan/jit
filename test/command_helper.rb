@@ -7,6 +7,8 @@ require "repository"
 
 module CommandHelper
   def self.included(suite)
+    return unless suite.respond_to?(:before)
+
     suite.before { jit_cmd "init", repo_path.to_s }
     suite.after  { FileUtils.rm_rf(repo_path) }
   end
