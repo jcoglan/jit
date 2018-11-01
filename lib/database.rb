@@ -37,6 +37,10 @@ class Database
     hash_content(serialize_object(object))
   end
 
+  def has?(oid)
+    File.file?(object_path(oid))
+  end
+
   def load(oid)
     @objects[oid] ||= read_object(oid)
   end
