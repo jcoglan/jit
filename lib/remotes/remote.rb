@@ -20,8 +20,16 @@ class Remotes
       @config.get(["remote", @name, "pushurl"]) || fetch_url
     end
 
+    def push_specs
+      @config.get_all(["remote", @name, "push"])
+    end
+
     def uploader
       @config.get(["remote", @name, "uploadpack"])
+    end
+
+    def receiver
+      @config.get(["remote", @name, "receivepack"])
     end
 
   end
