@@ -1,11 +1,30 @@
+require "pathname"
+
+require_relative "../refs"
+require_relative "../revision"
+
 class Remotes
 
-  REFSPEC_FORMAT = /^(\+?)([^:]+):([^:]+)$/
+  REFSPEC_FORMAT = /^(\+?)([^:]*)(:([^:]*))?$/
 
   Refspec = Struct.new(:source, :target, :forced) do
     def self.parse(spec)
-      match = REFSPEC_FORMAT.match(spec)
-      Refspec.new(match[2], match[3], match[1] == "+")
+      match  = REFSPEC_FORMAT.match(spec)
+      source = canonical(match[2])
+      target = canonical(match[4]) || source
+
+      Refspec.new(source, target, match[1] == "+")
+    end
+
+    def self.canonical(name)
+      return nil if name.to_s == ""
+      return name unless Revision.valid_ref?(name)
+
+      first  = Pathname.new(name).each_filename.first
+      dirs   = [Refs::REFS_DIR, Refs::HEADS_DIR, Refs::REMOTES_DIR]
+      prefix = dirs.find { |dir| first == dir.basename.to_s }
+
+      (prefix&.dirname || Refs::HEADS_DIR).join(name).to_s
     end
 
     def self.expand(specs, refs)
