@@ -6,6 +6,7 @@ require_relative "./revision"
 
 class Refs
   InvalidBranch = Class.new(StandardError)
+  StaleValue    = Class.new(StandardError)
 
   SymRef = Struct.new(:refs, :path) do
     def read_oid
@@ -69,6 +70,16 @@ class Refs
 
   def update_ref(name, oid)
     update_ref_file(@pathname.join(name), oid)
+  end
+
+  def compare_and_swap(name, old_oid, new_oid)
+    path = @pathname.join(name)
+
+    update_ref_file(path, new_oid) do
+      unless old_oid == read_symref(path)
+        raise StaleValue, "value of #{ name } changed since last read"
+      end
+    end
   end
 
   def create_branch(branch_name, start_oid)
@@ -186,11 +197,21 @@ class Refs
     lockfile = Lockfile.new(path)
 
     lockfile.hold_for_update
-    write_lockfile(lockfile, oid)
+    yield if block_given?
+
+    if oid
+      write_lockfile(lockfile, oid)
+    else
+      File.unlink(path) rescue Errno::ENOENT
+      lockfile.rollback
+    end
 
   rescue Lockfile::MissingParent
     FileUtils.mkdir_p(path.dirname)
     retry
+  rescue => error
+    lockfile.rollback
+    raise error
   end
 
   def update_symref(path, oid)
