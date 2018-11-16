@@ -1,10 +1,12 @@
 require_relative "./base"
+require_relative "./shared/fast_forward"
 require_relative "./shared/receive_objects"
 require_relative "./shared/remote_agent"
 
 module Command
   class ReceivePack < Base
 
+    include FastForward
     include ReceiveObjects
     include RemoteAgent
 
@@ -53,10 +55,32 @@ module Command
     def update_ref(ref, old_oid, new_oid)
       return report_status("ng #{ ref } unpacker error") if @unpack_error
 
+      validate_update(ref, old_oid, new_oid)
       repo.refs.compare_and_swap(ref, old_oid, new_oid)
       report_status("ok #{ ref }")
     rescue => error
       report_status("ng #{ ref } #{ error.message }")
+    end
+
+    def validate_update(ref, old_oid, new_oid)
+      if repo.config.get(["receive", "denyDeletes"])
+        raise "deletion prohibited" unless new_oid
+      end
+
+      if repo.config.get(["receive", "denyNonFastForwards"])
+        raise "non-fast-forward" if fast_forward_error(old_oid, new_oid)
+      end
+
+      return unless repo.config.get(["core", "bare"]) == false and
+                    repo.refs.current_ref.path == ref
+
+      unless repo.config.get(["receive", "denyCurrentBranch"]) == false
+        raise "branch is currently checked out" if new_oid
+      end
+
+      unless repo.config.get(["receive", "denyDeleteCurrent"]) == false
+        raise "deletion of the current branch prohibited" unless new_oid
+      end
     end
 
     def report_status(line)
