@@ -1,6 +1,7 @@
 require "fileutils"
 
 require_relative "./base"
+require_relative "../config"
 require_relative "../refs"
 
 module Command
@@ -22,6 +23,11 @@ module Command
           exit 1
         end
       end
+
+      config = ::Config.new(git_path.join("config"))
+      config.open_for_update
+      config.set(["core", "bare"], false)
+      config.save
 
       refs = Refs.new(git_path)
       path = File.join("refs", "heads", DEFAULT_BRANCH)
