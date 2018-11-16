@@ -8,7 +8,7 @@ class Progress
   end
 
   def start(message, total = nil)
-    return unless @output.isatty
+    return if ENV["NO_PROGRESS"] or not @output.isatty
 
     @message  = message
     @total    = total
