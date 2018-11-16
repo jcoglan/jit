@@ -6,6 +6,8 @@ require "command_helper"
 require "remote_repo"
 require "rev_list"
 
+ENV["NO_PROGRESS"] = "1"
+
 describe Command::Fetch do
   include CommandHelper
 
