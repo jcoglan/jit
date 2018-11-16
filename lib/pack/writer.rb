@@ -10,10 +10,12 @@ module Pack
 
     def initialize(output, database, options = {})
       @output   = output
-      @digest   = Digest::SHA1.new
       @database = database
+      @digest   = Digest::SHA1.new
+      @offset   = 0
 
       @compression = options.fetch(:compression, Zlib::DEFAULT_COMPRESSION)
+      @progress    = options[:progress]
     end
 
     def write_objects(rev_list)
@@ -28,11 +30,18 @@ module Pack
     def write(data)
       @output.write(data)
       @digest.update(data)
+      @offset += data.bytesize
     end
 
     def prepare_pack_list(rev_list)
       @pack_list = []
-      rev_list.each { |object| add_to_pack_list(object) }
+      @progress&.start("Counting objects")
+
+      rev_list.each do |object|
+        add_to_pack_list(object)
+        @progress&.tick
+      end
+      @progress&.stop
     end
 
     def add_to_pack_list(object)
@@ -51,7 +60,11 @@ module Pack
     end
 
     def write_entries
+      count = @pack_list.size
+      @progress&.start("Writing objects", count) unless @output == STDOUT
+
       @pack_list.each { |entry| write_entry(entry) }
+      @progress&.stop
     end
 
     def write_entry(entry)
@@ -62,6 +75,8 @@ module Pack
 
       write(header.pack("C*"))
       write(Zlib::Deflate.deflate(object.data, @compression))
+
+      @progress&.tick(@offset)
     end
 
   end

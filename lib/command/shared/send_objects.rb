@@ -1,4 +1,5 @@
 require_relative "../../pack"
+require_relative "../../progress"
 require_relative "../../rev_list"
 
 module Command
@@ -11,8 +12,9 @@ module Command
       pack_compression = repo.config.get(["pack", "compression"]) ||
                          repo.config.get(["core", "compression"])
 
-      write_opts = { :compression => pack_compression }
-      writer     = Pack::Writer.new(@conn.output, repo.database, write_opts)
+      writer = Pack::Writer.new(@conn.output, repo.database,
+                                :compression => pack_compression,
+                                :progress    => Progress.new(@stderr))
 
       writer.write_objects(rev_list)
     end
