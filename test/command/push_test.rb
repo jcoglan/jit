@@ -12,6 +12,8 @@ describe Command::Push do
   def create_remote_repo(name)
     RemoteRepo.new(name).tap do |repo|
       repo.jit_cmd "init", repo.repo_path.to_s
+      repo.jit_cmd "config", "receive.denyCurrentBranch", "false"
+      repo.jit_cmd "config", "receive.denyDeleteCurrent", "false"
     end
   end
 
@@ -183,6 +185,18 @@ describe Command::Push do
              #{ @remote_head }..#{ @local_head } master -> master
         OUTPUT
       end
+
+      it "succeeds when the remote denies non-fast-forward changes" do
+        @remote.jit_cmd "config", "receive.denyNonFastForwards", "true"
+
+        jit_cmd "push", "origin", "master"
+        assert_status 0
+
+        assert_stderr <<~OUTPUT
+          To file://#{ @remote.repo_path }
+             #{ @remote_head }..#{ @local_head } master -> master
+        OUTPUT
+      end
     end
 
     describe "when the remote ref has diverged from its local counterpart" do
@@ -255,6 +269,110 @@ describe Command::Push do
           refute_equal @remote_head, @local_head
           assert_equal @local_head, commits(repo, ["origin/master"]).first
         end
+      end
+
+      describe "when the remote denies non-fast-forward updates" do
+        before do
+          @remote.jit_cmd "config", "receive.denyNonFastForwards", "true"
+          jit_cmd "fetch"
+        end
+
+        it "rejects the pushed update" do
+          jit_cmd "push", "origin", "master", "-f"
+          assert_status 1
+
+          assert_stderr <<~OUTPUT
+            To file://#{ @remote.repo_path }
+             ! [rejected] master -> master (non-fast-forward)
+          OUTPUT
+        end
+      end
+    end
+
+    describe "when the remote denies updating the current branch" do
+      before do
+        @remote.jit_cmd "config", "--unset", "receive.denyCurrentBranch"
+      end
+
+      it "rejects the pushed update" do
+        jit_cmd "push", "origin", "master"
+        assert_status 1
+
+        assert_stderr <<~OUTPUT
+          To file://#{ @remote.repo_path }
+           ! [rejected] master -> master (branch is currently checked out)
+        OUTPUT
+      end
+
+      it "does not update the remote's ref" do
+        jit_cmd "push", "origin", "master"
+
+        refute_nil repo.refs.read_ref("refs/heads/master")
+        assert_nil @remote.repo.refs.read_ref("refs/heads/master")
+      end
+
+      it "does not update the local remotes/origin/* ref" do
+        jit_cmd "push", "origin", "master"
+
+        assert_nil repo.refs.read_ref("refs/remotes/origin/master")
+      end
+    end
+
+    describe "when the remote denies deleting the current branch" do
+      before do
+        jit_cmd "push", "origin", "master"
+        @remote.jit_cmd "config", "--unset", "receive.denyDeleteCurrent"
+      end
+
+      it "rejects the pushed update" do
+        jit_cmd "push", "origin", ":master"
+        assert_status 1
+
+        assert_stderr <<~OUTPUT
+          To file://#{ @remote.repo_path }
+           ! [rejected] master (deletion of the current branch prohibited)
+        OUTPUT
+      end
+
+      it "does not delete the remote's ref" do
+        jit_cmd "push", "origin", ":master"
+
+        refute_nil @remote.repo.refs.read_ref("refs/heads/master")
+      end
+
+      it "does not delete the local remotes/origin/* ref" do
+        jit_cmd "push", "origin", "master"
+
+        refute_nil repo.refs.read_ref("refs/remotes/origin/master")
+      end
+    end
+
+    describe "when the remote denies deleting any branch" do
+      before do
+        jit_cmd "push", "origin", "master"
+        @remote.jit_cmd "config", "receive.denyDeletes", "true"
+      end
+
+      it "rejects the pushed update" do
+        jit_cmd "push", "origin", ":master"
+        assert_status 1
+
+        assert_stderr <<~OUTPUT
+          To file://#{ @remote.repo_path }
+           ! [rejected] master (deletion prohibited)
+        OUTPUT
+      end
+
+      it "does not delete the remote's ref" do
+        jit_cmd "push", "origin", ":master"
+
+        refute_nil @remote.repo.refs.read_ref("refs/heads/master")
+      end
+
+      it "does not delete the local remotes/origin/* ref" do
+        jit_cmd "push", "origin", "master"
+
+        refute_nil repo.refs.read_ref("refs/remotes/origin/master")
       end
     end
   end
