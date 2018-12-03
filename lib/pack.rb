@@ -8,6 +8,9 @@ module Pack
   SIGNATURE     = "PACK"
   VERSION       = 2
 
+  MAX_COPY_SIZE   = 0xffffff
+  MAX_INSERT_SIZE = 0x7f
+
   COMMIT = 1
   TREE   = 2
   BLOB   = 3
