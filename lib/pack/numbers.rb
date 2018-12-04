@@ -2,10 +2,9 @@ module Pack
   module Numbers
 
     module VarIntLE
-      def self.write(value)
+      def self.write(value, shift)
         bytes = []
-        mask  = 0xf
-        shift = 4
+        mask  = 2 ** shift - 1
 
         until value <= mask
           bytes.push(0x80 | value & mask)
@@ -17,10 +16,9 @@ module Pack
         bytes + [value]
       end
 
-      def self.read(input)
+      def self.read(input, shift)
         first = input.readbyte
-        value = first & 0xf
-        shift = 4
+        value = first & (2 ** shift - 1)
 
         byte = first
 
