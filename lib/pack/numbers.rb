@@ -32,5 +32,23 @@ module Pack
       end
     end
 
+    module PackedInt56LE
+      def self.write(value)
+        bytes = (0..6).map { |i| (value >> (8 * i)) & 0xff }
+
+        flags  = bytes.map.with_index { |b, i| b == 0 ? 0 : 1 << i }
+        header = flags.reduce(0) { |a, b| a | b }
+
+        [header] + bytes.reject { |b| b == 0 }
+      end
+
+      def self.read(input, header)
+        flags = (0..6).reject { |i| header & (1 << i) == 0 }
+        bytes = flags.map { |i| input.readbyte << (8 * i) }
+
+        bytes.reduce(0) { |a, b| a | b }
+      end
+    end
+
   end
 end
