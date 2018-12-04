@@ -8,6 +8,7 @@ module Pack
   SIGNATURE     = "PACK"
   VERSION       = 2
 
+  GIT_MAX_COPY    = 0x10000
   MAX_COPY_SIZE   = 0xffffff
   MAX_INSERT_SIZE = 0x7f
 
