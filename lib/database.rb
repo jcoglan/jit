@@ -45,6 +45,11 @@ class Database
     @objects[oid] ||= read_object(oid)
   end
 
+  def load_info(oid)
+    type, size, _ = read_object_header(oid, 128)
+    Raw.new(type, size)
+  end
+
   def load_raw(oid)
     type, size, scanner = read_object_header(oid)
     Raw.new(type, size, scanner.rest)
