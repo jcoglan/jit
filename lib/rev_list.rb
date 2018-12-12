@@ -19,6 +19,7 @@ class RevList
     @diffs   = {}
     @output  = []
     @pending = []
+    @paths   = {}
 
     @objects = options.fetch(:objects, false)
     @missing = options.fetch(:missing, false)
@@ -34,7 +35,7 @@ class RevList
     limit_list if @limited
     mark_edges_uninteresting if @objects
     traverse_commits { |commit| yield commit }
-    traverse_pending { |object| yield object }
+    traverse_pending { |object| yield object, @paths[object.oid] }
   end
 
   def tree_diff(old_oid, new_oid)
@@ -213,14 +214,16 @@ class RevList
     end
   end
 
-  def traverse_tree(entry)
+  def traverse_tree(entry, path = Pathname.new(""))
+    @paths[entry.oid] ||= path
+
     return unless yield entry
     return unless entry.tree?
 
     tree = @repo.database.load(entry.oid)
 
     tree.each_entry do |name, item|
-      traverse_tree(item) { |object| yield object }
+      traverse_tree(item, path.join(name)) { |object| yield object }
     end
   end
 
