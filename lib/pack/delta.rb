@@ -1,4 +1,7 @@
+require "forwardable"
+
 require_relative "./numbers"
+require_relative "./xdelta"
 
 module Pack
   class Delta
@@ -27,6 +30,28 @@ module Pack
       def to_s
         [data.bytesize, data].pack("Ca*")
       end
+    end
+
+    extend Forwardable
+    def_delegator :@data, :bytesize, :size
+
+    attr_reader :base, :data
+
+    def initialize(source, target)
+      @base = source.entry
+      @data = sizeof(source) + sizeof(target)
+
+      source.delta_index ||= XDelta.create_index(source.data)
+
+      delta = source.delta_index.compress(target.data)
+      delta.each { |op| @data.concat(op.to_s) }
+    end
+
+    private
+
+    def sizeof(entry)
+      bytes = Numbers::VarIntLE.write(entry.size, 7)
+      bytes.pack("C*")
     end
 
   end
