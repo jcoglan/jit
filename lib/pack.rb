@@ -1,6 +1,7 @@
 require_relative "./pack/reader"
 require_relative "./pack/writer"
 require_relative "./pack/stream"
+require_relative "./pack/unpacker"
 
 module Pack
   HEADER_SIZE   = 12
@@ -33,4 +34,6 @@ module Pack
       data
     end
   end
+
+  RefDelta = Struct.new(:base_oid, :delta_data)
 end
