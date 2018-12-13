@@ -6,6 +6,7 @@ module Pack
     extend Forwardable
     def_delegators :@info, :type, :size
 
+    attr_accessor :offset
     attr_reader :oid, :delta, :depth
 
     def initialize(oid, info, path)
