@@ -16,6 +16,8 @@ module Pack
   TREE   = 2
   BLOB   = 3
 
+  REF_DELTA = 7
+
   TYPE_CODES = {
     "commit" => COMMIT,
     "tree"   => TREE,
