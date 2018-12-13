@@ -10,16 +10,9 @@ module Command
       progress = Progress.new(@stderr) unless @conn.input == STDIN
 
       reader.read_header
-      progress&.start("Unpacking objects", reader.count)
 
-      reader.count.times do
-        record, _ = stream.capture { reader.read_record }
-        repo.database.store(record)
-        progress&.tick(stream.offset)
-      end
-      progress&.stop
-
-      stream.verify_checksum
+      unpacker = Pack::Unpacker.new(repo.database, reader, stream, progress)
+      unpacker.process_pack
     end
 
   end
