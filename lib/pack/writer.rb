@@ -1,12 +1,12 @@
 require "digest/sha1"
 require "zlib"
 
+require_relative "./compressor"
+require_relative "./entry"
 require_relative "./numbers"
 
 module Pack
   class Writer
-
-    Entry = Struct.new(:oid, :type)
 
     def initialize(output, database, options = {})
       @output   = output
@@ -20,6 +20,7 @@ module Pack
 
     def write_objects(rev_list)
       prepare_pack_list(rev_list)
+      compress_objects
       write_header
       write_entries
       @output.write(@digest.digest)
@@ -37,21 +38,22 @@ module Pack
       @pack_list = []
       @progress&.start("Counting objects")
 
-      rev_list.each do |object|
-        add_to_pack_list(object)
+      rev_list.each do |object, path|
+        add_to_pack_list(object, path)
         @progress&.tick
       end
       @progress&.stop
     end
 
-    def add_to_pack_list(object)
-      case object
-      when Database::Commit
-        @pack_list.push(Entry.new(object.oid, COMMIT))
-      when Database::Entry
-        type = object.tree? ? TREE : BLOB
-        @pack_list.push(Entry.new(object.oid, type))
-      end
+    def add_to_pack_list(object, path)
+      info = @database.load_info(object.oid)
+      @pack_list.push(Entry.new(object.oid, info, path))
+    end
+
+    def compress_objects
+      compressor = Compressor.new(@database, @progress)
+      @pack_list.each { |entry| compressor.add(entry) }
+      compressor.build_deltas
     end
 
     def write_header
@@ -68,12 +70,18 @@ module Pack
     end
 
     def write_entry(entry)
-      object = @database.load_raw(entry.oid)
+      write_entry(entry.delta.base) if entry.delta
 
-      header = Numbers::VarIntLE.write(object.size, 4)
-      header[0] |= entry.type << 4
+      return if entry.offset
+      entry.offset = @offset
+
+      object = entry.delta || @database.load_raw(entry.oid)
+
+      header = Numbers::VarIntLE.write(entry.packed_size, 4)
+      header[0] |= entry.packed_type << 4
 
       write(header.pack("C*"))
+      write(entry.delta_prefix)
       write(Zlib::Deflate.deflate(object.data, @compression))
 
       @progress&.tick(@offset)
