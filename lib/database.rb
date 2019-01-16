@@ -10,9 +10,9 @@ require_relative "./database/entry"
 require_relative "./database/tree"
 require_relative "./database/tree_diff"
 
-class Database
-  TEMP_CHARS = ("a".."z").to_a + ("A".."Z").to_a + ("0".."9").to_a
+require_relative "./temp_file"
 
+class Database
   TYPES = {
     "blob"   => Blob,
     "tree"   => Tree,
@@ -150,25 +150,8 @@ class Database
     path = object_path(oid)
     return if File.exist?(path)
 
-    dirname   = path.dirname
-    temp_path = dirname.join(generate_temp_name)
-
-    begin
-      flags = File::RDWR | File::CREAT | File::EXCL
-      file  = File.open(temp_path, flags)
-    rescue Errno::ENOENT
-      Dir.mkdir(dirname)
-      file = File.open(temp_path, flags)
-    end
-
-    compressed = Zlib::Deflate.deflate(content, Zlib::BEST_SPEED)
-    file.write(compressed)
-    file.close
-
-    File.rename(temp_path, path)
-  end
-
-  def generate_temp_name
-    "tmp_obj_#{ (1..6).map { TEMP_CHARS.sample }.join("") }"
+    file = TempFile.new(path.dirname, "tmp_obj")
+    file.write(Zlib::Deflate.deflate(content, Zlib::BEST_SPEED))
+    file.move(path.basename)
   end
 end
