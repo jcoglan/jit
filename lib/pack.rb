@@ -1,6 +1,7 @@
 require_relative "./pack/reader"
 require_relative "./pack/writer"
 require_relative "./pack/stream"
+require_relative "./pack/indexer"
 require_relative "./pack/unpacker"
 
 module Pack
@@ -12,6 +13,9 @@ module Pack
   GIT_MAX_COPY    = 0x10000
   MAX_COPY_SIZE   = 0xffffff
   MAX_INSERT_SIZE = 0x7f
+
+  IDX_SIGNATURE  = 0xff744f63
+  IDX_MAX_OFFSET = 0x80000000
 
   COMMIT = 1
   TREE   = 2
