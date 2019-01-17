@@ -489,4 +489,35 @@ describe Command::Push do
       end
     end
   end
+
+  describe "when the receiver has stored a pack" do
+    before do
+      @alice = create_remote_repo("push-remote-alice")
+      @bob   = create_remote_repo("push-remote-bob")
+
+      @alice.jit_cmd "config", "receive.unpackLimit", "5"
+
+      ["one", "dir/two", "three"].each { |msg| write_commit msg }
+
+      jit_cmd "remote", "add", "alice", "file://#{ @alice.repo_path }"
+      jit_cmd "config", "remote.alice.receivepack", "#{ jit_path } receive-pack"
+
+      jit_cmd "push", "alice", "refs/heads/*"
+    end
+
+    after do
+      FileUtils.rm_rf(@alice.repo_path)
+      FileUtils.rm_rf(@bob.repo_path)
+    end
+
+    it "can push packed objects to another repository" do
+      @alice.jit_cmd "remote", "add", "bob", "file://#{ @bob.repo_path }"
+      @alice.jit_cmd "config", "remote.bob.receivepack", "#{ jit_path } receive-pack"
+
+      @alice.jit_cmd "push", "bob", "refs/heads/*"
+
+      assert_equal commits(repo, ["master"]),
+                   commits(@bob.repo, ["master"])
+    end
+  end
 end
