@@ -4,6 +4,8 @@ require_relative "../../progress"
 module Command
   module ReceiveObjects
 
+    UNPACK_LIMIT = 100
+
     def recv_packed_objects(unpack_limit = nil, prefix = "")
       stream   = Pack::Stream.new(@conn.input, prefix)
       reader   = Pack::Reader.new(stream)
@@ -28,7 +30,7 @@ module Command
     end
 
     def transfer_unpack_limit
-      repo.config.get(["transfer", "unpackLimit"])
+      repo.config.get(["transfer", "unpackLimit"]) || UNPACK_LIMIT
     end
 
   end
