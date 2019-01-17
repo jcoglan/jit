@@ -15,6 +15,7 @@ module Command
       processor = factory.new(repo.database, reader, stream, progress)
 
       processor.process_pack
+      repo.database.reload
     end
 
     def select_processor_class(reader, unpack_limit)
