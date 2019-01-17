@@ -1,4 +1,5 @@
 require_relative "./pack/reader"
+require_relative "./pack/index"
 require_relative "./pack/writer"
 require_relative "./pack/stream"
 require_relative "./pack/indexer"
