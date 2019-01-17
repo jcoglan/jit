@@ -26,6 +26,10 @@ class Database
     @objects  = {}
   end
 
+  def pack_path
+    @pathname.join("pack")
+  end
+
   def store(object)
     content    = serialize_object(object)
     object.oid = hash_content(content)
