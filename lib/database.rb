@@ -10,7 +10,7 @@ require_relative "./database/entry"
 require_relative "./database/tree"
 require_relative "./database/tree_diff"
 
-require_relative "./database/loose"
+require_relative "./database/backends"
 
 class Database
   TYPES = {
@@ -22,16 +22,12 @@ class Database
   Raw = Struct.new(:type, :size, :data)
 
   extend Forwardable
-  def_delegators :@backend, :has?, :load_info, :load_raw, :prefix_match
+  def_delegators :@backend, :has?, :load_info, :load_raw,
+                            :prefix_match, :pack_path
 
   def initialize(pathname)
-    @pathname = pathname
-    @objects  = {}
-    @backend  = Loose.new(pathname)
-  end
-
-  def pack_path
-    @pathname.join("pack")
+    @objects = {}
+    @backend = Backends.new(pathname)
   end
 
   def store(object)

@@ -134,6 +134,13 @@ describe Command::Fetch do
         jit_cmd "fetch"
         assert_object_count 2
       end
+
+      it "can load commits from the stored pack" do
+        jit_cmd "fetch"
+
+        assert_equal commits(@remote.repo, ["master"]),
+                     commits(repo, ["origin/master"])
+      end
     end
 
     describe "when the remote ref is ahead of its local counterpart" do
