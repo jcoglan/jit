@@ -4,15 +4,31 @@ require_relative "../../progress"
 module Command
   module ReceiveObjects
 
-    def recv_packed_objects(prefix = "")
+    def recv_packed_objects(unpack_limit = nil, prefix = "")
       stream   = Pack::Stream.new(@conn.input, prefix)
       reader   = Pack::Reader.new(stream)
       progress = Progress.new(@stderr) unless @conn.input == STDIN
 
       reader.read_header
 
-      unpacker = Pack::Unpacker.new(repo.database, reader, stream, progress)
-      unpacker.process_pack
+      factory   = select_processor_class(reader, unpack_limit)
+      processor = factory.new(repo.database, reader, stream, progress)
+
+      processor.process_pack
+    end
+
+    def select_processor_class(reader, unpack_limit)
+      unpack_limit ||= transfer_unpack_limit
+
+      if unpack_limit and reader.count > unpack_limit
+        Pack::Indexer
+      else
+        Pack::Unpacker
+      end
+    end
+
+    def transfer_unpack_limit
+      repo.config.get(["transfer", "unpackLimit"])
     end
 
   end

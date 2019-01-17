@@ -125,6 +125,17 @@ describe Command::Fetch do
       assert_workspace "one.txt" => "one"
     end
 
+    describe "when an unpack limit is set" do
+      before do
+        jit_cmd "config", "fetch.unpackLimit", "5"
+      end
+
+      it "keeps the pack on disk with an index" do
+        jit_cmd "fetch"
+        assert_object_count 2
+      end
+    end
+
     describe "when the remote ref is ahead of its local counterpart" do
       before do
         jit_cmd "fetch"

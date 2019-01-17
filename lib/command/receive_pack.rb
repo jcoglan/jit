@@ -40,7 +40,8 @@ module Command
 
     def recv_objects
       @unpack_error = nil
-      recv_packed_objects if @requests.values.any?(&:last)
+      unpack_limit = repo.config.get(["receive", "unpackLimit"])
+      recv_packed_objects(unpack_limit) if @requests.values.any?(&:last)
       report_status("unpack ok")
     rescue => error
       @unpack_error = error
