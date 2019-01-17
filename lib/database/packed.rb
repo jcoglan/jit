@@ -22,12 +22,30 @@ class Database
       @index.oid_offset(oid) != nil
     end
 
+    def load_info(oid)
+      offset = @index.oid_offset(oid)
+      offset ? load_info_at(offset) : nil
+    end
+
     def load_raw(oid)
       offset = @index.oid_offset(oid)
       offset ? load_raw_at(offset) : nil
     end
 
     private
+
+    def load_info_at(offset)
+      @pack_file.seek(offset)
+      record = @reader.read_info
+
+      case record
+      when Pack::Record
+        Raw.new(record.type, record.data)
+      when Pack::RefDelta
+        base = load_info(record.base_oid)
+        Raw.new(base.type, record.delta_data)
+      end
+    end
 
     def load_raw_at(offset)
       @pack_file.seek(offset)

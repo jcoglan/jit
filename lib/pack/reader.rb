@@ -1,4 +1,6 @@
 require "zlib"
+
+require_relative "./expander"
 require_relative "./numbers"
 
 module Pack
@@ -31,6 +33,21 @@ module Pack
         Record.new(TYPE_CODES.key(type), read_zlib_stream)
       when REF_DELTA
         read_ref_delta
+      end
+    end
+
+    def read_info
+      type, size = read_record_header
+
+      case type
+      when COMMIT, TREE, BLOB
+        Record.new(TYPE_CODES.key(type), size)
+
+      when REF_DELTA
+        delta = read_ref_delta
+        size  = Expander.new(delta.delta_data).target_size
+
+        RefDelta.new(delta.base_oid, size)
       end
     end
 
