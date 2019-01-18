@@ -14,7 +14,8 @@ module Command
     include ReceiveObjects
     include RemoteClient
 
-    UPLOAD_PACK = "git-upload-pack"
+    CAPABILITIES = ["ofs-delta"]
+    UPLOAD_PACK  = "git-upload-pack"
 
     def define_options
       @parser.on("-f", "--force") { @options[:force] = true }
@@ -26,7 +27,7 @@ module Command
 
     def run
       configure
-      start_agent("fetch", @uploader, @fetch_url)
+      start_agent("fetch", @uploader, @fetch_url, CAPABILITIES)
 
       recv_references
       send_want_list

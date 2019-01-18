@@ -1,4 +1,5 @@
 require "forwardable"
+require_relative "./numbers"
 
 module Pack
   class Entry
@@ -9,10 +10,11 @@ module Pack
     attr_accessor :offset
     attr_reader :oid, :delta, :depth
 
-    def initialize(oid, info, path)
+    def initialize(oid, info, path, ofs = false)
       @oid   = oid
       @info  = info
       @path  = path
+      @ofs   = ofs
       @delta = nil
       @depth = 0
     end
@@ -27,7 +29,11 @@ module Pack
     end
 
     def packed_type
-      @delta ? REF_DELTA : TYPE_CODES.fetch(@info.type)
+      if @delta
+        @ofs ? OFS_DELTA : REF_DELTA
+      else
+        TYPE_CODES.fetch(@info.type)
+      end
     end
 
     def packed_size
@@ -35,7 +41,13 @@ module Pack
     end
 
     def delta_prefix
-      @delta ? [@delta.base.oid].pack("H40") : ""
+      return "" unless @delta
+
+      if @ofs
+        Numbers::VarIntBE.write(offset - @delta.base.offset)
+      else
+        [@delta.base.oid].pack("H40")
+      end
     end
 
   end

@@ -10,8 +10,10 @@ module Command
     include RemoteAgent
     include SendObjects
 
+    CAPABILITIES = ["ofs-delta"]
+
     def run
-      accept_client("upload-pack")
+      accept_client("upload-pack", CAPABILITIES)
 
       send_references
       recv_want_list

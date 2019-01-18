@@ -77,6 +77,8 @@ module Pack
       when Record
         oid = @database.hash_object(record)
         @index[oid] = [offset, crc32]
+      when OfsDelta
+        @pending[offset - record.base_ofs].push([offset, crc32])
       when RefDelta
         @pending[record.base_oid].push([offset, crc32])
       end
@@ -104,13 +106,15 @@ module Pack
 
       @index.to_a.each do |oid, (offset, _)|
         record = read_record_at(offset)
+
+        resolve_delta_base(record, offset)
         resolve_delta_base(record, oid)
       end
       @progress&.stop
     end
 
-    def resolve_delta_base(record, oid)
-      pending = @pending.delete(oid)
+    def resolve_delta_base(record, key)
+      pending = @pending.delete(key)
       return unless pending
 
       pending.each do |offset, crc32|
@@ -127,6 +131,7 @@ module Pack
       @index[oid] = [offset, crc32]
       @progress&.tick
 
+      resolve_delta_base(object, offset)
       resolve_delta_base(object, oid)
     end
 
