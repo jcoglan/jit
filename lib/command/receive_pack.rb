@@ -10,7 +10,7 @@ module Command
     include ReceiveObjects
     include RemoteAgent
 
-    CAPABILITIES = ["no-thin", "report-status", "delete-refs"]
+    CAPABILITIES = ["no-thin", "report-status", "delete-refs", "ofs-delta"]
 
     def run
       accept_client("receive-pack", CAPABILITIES)

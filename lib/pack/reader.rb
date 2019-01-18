@@ -31,6 +31,8 @@ module Pack
       case type
       when COMMIT, TREE, BLOB
         Record.new(TYPE_CODES.key(type), read_zlib_stream)
+      when OFS_DELTA
+        read_ofs_delta
       when REF_DELTA
         read_ref_delta
       end
@@ -42,6 +44,12 @@ module Pack
       case type
       when COMMIT, TREE, BLOB
         Record.new(TYPE_CODES.key(type), size)
+
+      when OFS_DELTA
+        delta = read_ofs_delta
+        size  = Expander.new(delta.delta_data).target_size
+
+        OfsDelta.new(delta.base_ofs, size)
 
       when REF_DELTA
         delta = read_ref_delta
@@ -58,6 +66,11 @@ module Pack
       type = (byte >> 4) & 0x7
 
       [type, size]
+    end
+
+    def read_ofs_delta
+      offset = Numbers::VarIntBE.read(@input)
+      OfsDelta.new(offset, read_zlib_stream)
     end
 
     def read_ref_delta
