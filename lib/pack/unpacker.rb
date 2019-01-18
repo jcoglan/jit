@@ -8,6 +8,7 @@ module Pack
       @reader   = reader
       @stream   = stream
       @progress = progress
+      @offsets  = {}
     end
 
     def process_pack
@@ -25,17 +26,25 @@ module Pack
     private
 
     def process_record
+      offset    = @stream.offset
       record, _ = @stream.capture { @reader.read_record }
 
-      record = resolve(record)
+      record = resolve(record, offset)
       @database.store(record)
+      @offsets[offset] = record.oid
     end
 
-    def resolve(record)
+    def resolve(record, offset)
       case record
       when Record   then record
+      when OfsDelta then resolve_ofs_delta(record, offset)
       when RefDelta then resolve_ref_delta(record)
       end
+    end
+
+    def resolve_ofs_delta(delta, offset)
+      oid = @offsets[offset - delta.base_ofs]
+      resolve_delta(oid, delta.delta_data)
     end
 
     def resolve_ref_delta(delta)

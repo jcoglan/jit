@@ -14,6 +14,7 @@ module Command
 
       writer = Pack::Writer.new(@conn.output, repo.database,
                                 :compression => pack_compression,
+                                :allow_ofs   => @conn.capable?("ofs-delta"),
                                 :progress    => Progress.new(@stderr))
 
       writer.write_objects(rev_list)
