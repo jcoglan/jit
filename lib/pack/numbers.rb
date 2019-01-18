@@ -32,6 +32,31 @@ module Pack
       end
     end
 
+    module VarIntBE
+      def self.write(value)
+        bytes = [value & 0x7f]
+
+        until (value >>= 7) == 0
+          value -= 1
+          bytes.push(0x80 | value & 0x7f)
+        end
+
+        bytes.reverse.pack("C*")
+      end
+
+      def self.read(input)
+        byte  = input.readbyte
+        value = byte & 0x7f
+
+        until byte < 0x80
+          byte  = input.readbyte
+          value = ((value + 1) << 7) | (byte & 0x7f)
+        end
+
+        value
+      end
+    end
+
     module PackedInt56LE
       def self.write(value)
         bytes = (0..6).map { |i| (value >> (8 * i)) & 0xff }
