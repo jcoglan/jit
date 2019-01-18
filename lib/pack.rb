@@ -21,6 +21,7 @@ module Pack
   TREE   = 2
   BLOB   = 3
 
+  OFS_DELTA = 6
   REF_DELTA = 7
 
   TYPE_CODES = {
@@ -39,5 +40,6 @@ module Pack
     end
   end
 
+  OfsDelta = Struct.new(:base_ofs, :delta_data)
   RefDelta = Struct.new(:base_oid, :delta_data)
 end
