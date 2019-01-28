@@ -5,7 +5,10 @@ module Command
   class RevList < Base
 
     def define_options
-      @parser.on("--all")            { @options[:all]     = true }
+      @parser.on("--all")      { @options[:all]      = true }
+      @parser.on("--branches") { @options[:branches] = true }
+      @parser.on("--remotes")  { @options[:remotes]  = true }
+
       @parser.on("--ignore-missing") { @options[:missing] = true }
       @parser.on("--objects")        { @options[:objects] = true }
       @parser.on("--reverse")        { @options[:reverse] = true }
