@@ -26,6 +26,8 @@ class RevList
     @walk    = options.fetch(:walk, true)
 
     include_refs(repo.refs.list_all_refs) if options[:all]
+    include_refs(repo.refs.list_branches) if options[:branches]
+    include_refs(repo.refs.list_remotes)  if options[:remotes]
 
     revs.each { |rev| handle_revision(rev) }
     handle_revision(Revision::HEAD) if @queue.empty?

@@ -8,6 +8,11 @@ module Command
     include PrintDiff
 
     def define_options
+      @rev_list_opts = {}
+      @parser.on("--all")      { @rev_list_opts[:all]      = true }
+      @parser.on("--branches") { @rev_list_opts[:branches] = true }
+      @parser.on("--remotes")  { @rev_list_opts[:remotes]  = true }
+
       @options[:decorate] = "auto"
       @options[:abbrev]   = :auto
       @options[:format]   = "medium"
@@ -47,7 +52,7 @@ module Command
       @reverse_refs = repo.refs.reverse_refs
       @current_ref  = repo.refs.current_ref
 
-      @rev_list = ::RevList.new(repo, @args)
+      @rev_list = ::RevList.new(repo, @args, @rev_list_opts)
       @rev_list.each { |commit| show_commit(commit) }
 
       exit 0
