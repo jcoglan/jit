@@ -131,7 +131,9 @@ module Command
     end
 
     def ref_color(ref)
-      ref.head? ? [:bold, :cyan] : [:bold, :green]
+      return [:bold, :cyan]  if ref.head?
+      return [:bold, :green] if ref.branch?
+      return [:bold, :red]   if ref.remote?
     end
 
     def show_patch(commit)
