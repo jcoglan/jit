@@ -5,6 +5,7 @@ require_relative "./remotes/remote"
 class Remotes
   DEFAULT_REMOTE = "origin"
 
+  InvalidBranch = Class.new(StandardError)
   InvalidRemote = Class.new(StandardError)
 
   def initialize(config)
@@ -53,5 +54,29 @@ class Remotes
     return nil unless @config.section?(["remote", name])
 
     Remote.new(@config, name)
+  end
+
+  def get_upstream(branch)
+    @config.open
+    name = @config.get(["branch", branch, "remote"])
+    get(name)&.get_upstream(branch)
+  end
+
+  def set_upstream(branch, upstream)
+    list_remotes.each do |name|
+      ref = get(name).set_upstream(branch, upstream)
+      return [name, ref] if ref
+    end
+
+    raise InvalidBranch,
+      "Cannot setup tracking information; " +
+      "starting point '#{ upstream }' is not a branch"
+  end
+
+  def unset_upstream(branch)
+    @config.open_for_update
+    @config.unset(["branch", branch, "remote"])
+    @config.unset(["branch", branch, "merge"])
+    @config.save
   end
 end
