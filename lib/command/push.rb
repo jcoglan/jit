@@ -42,13 +42,25 @@ module Command
     private
 
     def configure
-      name   = @args.fetch(0, Remotes::DEFAULT_REMOTE)
+      current_branch = repo.refs.current_ref.short_name
+      branch_remote  = repo.config.get(["branch", current_branch, "remote"])
+      branch_merge   = repo.config.get(["branch", current_branch, "merge"])
+
+      name   = @args.fetch(0, branch_remote || Remotes::DEFAULT_REMOTE)
       remote = repo.remotes.get(name)
 
       @push_url    = remote&.push_url || @args[0]
       @fetch_specs = remote&.fetch_specs || []
       @receiver    = @options[:receiver] || remote&.receiver || RECEIVE_PACK
-      @push_specs  = (@args.size > 1) ? @args.drop(1) : remote&.push_specs
+
+      if @args.size > 1
+        @push_specs = @args.drop(1)
+      elsif branch_merge
+        spec = Remotes::Refspec.new(current_branch, branch_merge, false)
+        @push_specs = [spec.to_s]
+      else
+        @push_specs = remote&.push_specs
+      end
     end
 
     def send_update_requests
