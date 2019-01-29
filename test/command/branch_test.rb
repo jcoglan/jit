@@ -4,15 +4,15 @@ require "command_helper"
 describe Command::Branch do
   include CommandHelper
 
+  def write_commit(message)
+    write_file "file.txt", message
+    jit_cmd "add", "."
+    commit message
+  end
+
   describe "with a chain of commits" do
     before do
-      messages = ["first", "second", "third"]
-
-      messages.each do |message|
-        write_file "file.txt", message
-        jit_cmd "add", "."
-        commit message
-      end
+      ["first", "second", "third"].each { |msg| write_commit msg }
     end
 
     it "creates a branch pointing at HEAD" do
@@ -153,7 +153,7 @@ describe Command::Branch do
       head = repo.refs.read_head
 
       jit_cmd "branch", "bug-fix"
-      jit_cmd "branch", "-D", "bug-fix"
+      jit_cmd "branch", "--delete", "bug-fix"
 
       assert_stdout <<~MSG
         Deleted branch bug-fix (was #{ repo.database.short_oid(head) }).
@@ -164,13 +164,56 @@ describe Command::Branch do
     end
 
     it "fails to delete a non-existent branch" do
-      jit_cmd "branch", "-D", "no-such-branch"
+      jit_cmd "branch", "--delete", "no-such-branch"
 
       assert_status 1
 
       assert_stderr <<~ERROR
         error: branch 'no-such-branch' not found.
       ERROR
+    end
+
+    describe "when the branch has diverged" do
+      before do
+        jit_cmd "branch", "topic"
+        jit_cmd "checkout", "topic"
+
+        write_commit "changed"
+
+        jit_cmd "checkout", "master"
+      end
+
+      it "deletes a merged branch" do
+        head = repo.refs.read_head
+
+        jit_cmd "checkout", "topic"
+        jit_cmd "branch", "--delete", "master"
+        assert_status 0
+
+        assert_stdout <<~MSG
+          Deleted branch master (was #{ repo.database.short_oid(head) }).
+        MSG
+      end
+
+      it "refuses to delete the branch" do
+        jit_cmd "branch", "--delete", "topic"
+        assert_status 1
+
+        assert_stderr <<~ERROR
+          error: The branch 'topic' is not fully merged.
+        ERROR
+      end
+
+      it "deletes the branch with force" do
+        head = repo.refs.read_ref("topic")
+
+        jit_cmd "branch", "-D", "topic"
+        assert_status 0
+
+        assert_stdout <<~MSG
+          Deleted branch topic (was #{ repo.database.short_oid(head) }).
+        MSG
+      end
     end
   end
 end
