@@ -29,6 +29,18 @@ module Merge
       @flags[oid].include?(flag)
     end
 
+    def counts
+      ones, twos = 0, 0
+
+      @flags.each do |oid, flags|
+        next unless flags.size == 1
+        ones += 1 if flags.include?(:parent1)
+        twos += 1 if flags.include?(:parent2)
+      end
+
+      [ones, twos]
+    end
+
     private
 
     def all_stale?

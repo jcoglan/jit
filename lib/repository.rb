@@ -5,6 +5,7 @@ require_relative "./refs"
 require_relative "./remotes"
 require_relative "./workspace"
 
+require_relative "./repository/divergence"
 require_relative "./repository/hard_reset"
 require_relative "./repository/migration"
 require_relative "./repository/pending_commit"
@@ -23,6 +24,10 @@ class Repository
 
   def database
     @database ||= Database.new(@git_path.join("objects"))
+  end
+
+  def divergence(ref)
+    Divergence.new(self, ref)
   end
 
   def hard_reset(oid)
