@@ -41,7 +41,10 @@ module Command
     private
 
     def configure
-      name   = @args.fetch(0, Remotes::DEFAULT_REMOTE)
+      current_branch = repo.refs.current_ref.short_name
+      branch_remote  = repo.config.get(["branch", current_branch, "remote"])
+
+      name   = @args.fetch(0, branch_remote || Remotes::DEFAULT_REMOTE)
       remote = repo.remotes.get(name)
 
       @fetch_url   = remote&.fetch_url || @args[0]
