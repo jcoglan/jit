@@ -379,6 +379,40 @@ describe Command::Push do
     end
   end
 
+  describe "with a configured upstream branch" do
+    before do
+      @remote = create_remote_repo("push-remote")
+
+      jit_cmd "remote", "add", "origin", "file://#{ @remote.repo_path }"
+      jit_cmd "config", "remote.origin.receivepack", "#{ jit_path } receive-pack"
+
+      ["one", "dir/two"].each { |msg| write_commit msg }
+      jit_cmd "push", "origin", "master"
+      write_commit "three"
+
+      jit_cmd "branch", "--set-upstream-to", "origin/master"
+    end
+
+    after do
+      FileUtils.rm_rf(@remote.repo_path)
+    end
+
+    it "pushes the current branch to its upstream" do
+      jit_cmd "push"
+      assert_status 0
+
+      new_oid, old_oid = commits(repo, ["master"])
+
+      assert_stderr <<~OUTPUT
+        To file://#{ @remote.repo_path }
+           #{ old_oid }..#{ new_oid } master -> master
+      OUTPUT
+
+      assert_equal repo.refs.read_ref("refs/heads/master"),
+                   @remote.repo.refs.read_ref("refs/heads/master")
+    end
+  end
+
   describe "with multiple branches in the local repository" do
     before do
       @remote = create_remote_repo("push-remote")
