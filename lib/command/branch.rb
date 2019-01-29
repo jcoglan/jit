@@ -1,8 +1,11 @@
 require_relative "./base"
+require_relative "./shared/fast_forward"
 require_relative "../revision"
 
 module Command
   class Branch < Base
+
+    include FastForward
 
     def define_options
       @parser.on("-a", "--all")     { @options[:all]     = true }
@@ -117,7 +120,7 @@ module Command
     end
 
     def delete_branch(branch_name)
-      return unless @options[:force]
+      check_merge_status(branch_name) unless @options[:force]
 
       oid   = repo.refs.delete_branch(branch_name)
       short = repo.database.short_oid(oid)
@@ -129,6 +132,17 @@ module Command
     rescue Refs::InvalidBranch => error
       @stderr.puts "error: #{ error }"
       exit 1
+    end
+
+    def check_merge_status(branch_name)
+      upstream   = repo.remotes.get_upstream(branch_name)
+      head_oid   = upstream ? repo.refs.read_ref(upstream) : repo.refs.read_head
+      branch_oid = repo.refs.read_ref(branch_name)
+
+      if fast_forward_error(branch_oid, head_oid)
+        @stderr.puts "error: The branch '#{ branch_name }' is not fully merged."
+        exit 1
+      end
     end
 
     def set_upstream_branch
