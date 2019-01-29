@@ -216,4 +216,115 @@ describe Command::Branch do
       end
     end
   end
+
+  describe "tracking remote branches" do
+    before do
+      jit_cmd "remote", "add", "origin", "ssh://example.com/repo"
+      @upstream = "refs/remotes/origin/master"
+
+      ["first", "second", "remote"].each { |msg| write_commit msg }
+      repo.refs.update_ref(@upstream, repo.refs.read_head)
+
+      jit_cmd "reset", "--hard", "@^"
+      ["third", "local"].each { |msg| write_commit msg }
+
+      @head = repo.database.load(repo.refs.read_head)
+      @oid  = repo.database.short_oid(@head.oid)
+    end
+
+    it "displays no divergence for unlinked branches" do
+      jit_cmd "branch", "--verbose"
+
+      assert_stdout <<~BRANCH
+        * master #{ @oid } local
+      BRANCH
+    end
+
+    it "displays divergence for linked branches" do
+      jit_cmd "branch", "--set-upstream-to", "origin/master"
+      jit_cmd "branch", "--verbose"
+
+      assert_stdout <<~BRANCH
+        * master #{ @oid } [ahead 2, behind 1] local
+      BRANCH
+    end
+
+    it "displays the branch ahead of its upstream" do
+      repo.refs.update_ref(@upstream, resolve_revision("master~2"))
+
+      jit_cmd "branch", "--set-upstream-to", "origin/master"
+      jit_cmd "branch", "--verbose"
+
+      assert_stdout <<~BRANCH
+        * master #{ @oid } [ahead 2] local
+      BRANCH
+    end
+
+    it "displays the branch behind its upstream" do
+      master = resolve_revision("@~2")
+      oid    = repo.database.short_oid(master)
+
+      jit_cmd "reset", master
+      jit_cmd "branch", "--set-upstream-to", "origin/master"
+      jit_cmd "branch", "--verbose"
+
+      assert_stdout <<~BRANCH
+        * master #{ oid } [behind 1] second
+      BRANCH
+    end
+
+    it "displays the upstream branch name" do
+      jit_cmd "branch", "--set-upstream-to", "origin/master"
+      jit_cmd "branch", "-vv"
+
+      assert_stdout <<~BRANCH
+        * master #{ @oid } [origin/master, ahead 2, behind 1] local
+      BRANCH
+    end
+
+    it "fails if the upstream ref does not exist" do
+      jit_cmd "branch", "--set-upstream-to", "origin/nope"
+      assert_status 1
+
+      assert_stderr <<~ERROR
+        error: the requested upstream branch 'origin/nope' does not exist
+      ERROR
+    end
+
+    it "fails if the upstream remote does not exist" do
+      repo.refs.update_ref("refs/remotes/nope/master", repo.refs.read_head)
+
+      jit_cmd "branch", "--set-upstream-to", "nope/master"
+      assert_status 128
+
+      assert_stderr \
+        "fatal: Cannot setup tracking information; " +
+        "starting point 'refs/remotes/nope/master' is not a branch\n"
+    end
+
+    it "creates a branch tracking its start point" do
+      jit_cmd "branch", "--track", "topic", "origin/master"
+      jit_cmd "checkout", "topic"
+
+      write_commit "topic"
+      oid = repo.database.short_oid(repo.refs.read_head)
+
+      jit_cmd "branch", "--verbose"
+
+      assert_stdout <<~BRANCH
+        master #{ @oid } local
+      * topic  #{  oid } [ahead 1] topic
+      BRANCH
+    end
+
+    it "unlinks a branch from its upstream" do
+      jit_cmd "branch", "--set-upstream-to", "origin/master"
+      jit_cmd "branch", "--unset-upstream"
+      jit_cmd "branch", "--verbose"
+
+      assert_stdout <<~BRANCH
+        * master #{ @oid } local
+      BRANCH
+    end
+  end
 end
