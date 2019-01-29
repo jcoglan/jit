@@ -162,6 +162,14 @@ class Refs
     path.relative_path_from(prefix).to_s
   end
 
+  def long_name(ref)
+    path = path_for_name(ref)
+    return path.relative_path_from(@pathname).to_s if path
+
+    raise InvalidBranch,
+      "the requested upstream branch '#{ ref }' does not exist"
+  end
+
   private
 
   def list_refs(dirname)

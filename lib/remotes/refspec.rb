@@ -35,6 +35,17 @@ class Remotes
       end
     end
 
+    def self.invert(specs, ref)
+      specs = specs.map { |spec| parse(spec) }
+
+      map = specs.reduce({}) do |mappings, spec|
+        spec.source, spec.target = spec.target, spec.source
+        mappings.merge(spec.match_refs([ref]))
+      end
+
+      map.keys.first
+    end
+
     def match_refs(refs)
       return { target => [source, forced] } unless source.to_s.include?("*")
 
