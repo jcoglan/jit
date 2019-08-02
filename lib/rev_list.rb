@@ -24,6 +24,7 @@ class RevList
 
     @missing = options.fetch(:missing, false)
     @objects = options.fetch(:objects, false)
+    @reverse = options.fetch(:reverse, false)
     @walk    = options.fetch(:walk, true)
 
     include_refs(repo.refs.list_all_refs) if options[:all]
@@ -37,7 +38,15 @@ class RevList
   def each
     limit_list if @limited
     mark_edges_uninteresting if @objects
-    traverse_commits { |commit| yield commit }
+
+    enum = enum_for(:traverse_commits)
+    iter = @reverse ? :reverse_each : :each
+
+    enum.__send__(iter) do |commit|
+      @pending.push(@repo.database.tree_entry(commit.tree))
+      yield commit
+    end
+
     traverse_pending { |object| yield object, @paths[object.oid] }
   end
 
@@ -192,7 +201,6 @@ class RevList
       next if marked?(commit.oid, :uninteresting)
       next if marked?(commit.oid, :treesame)
 
-      @pending.push(@repo.database.tree_entry(commit.tree))
       yield commit
     end
   end
