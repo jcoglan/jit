@@ -22,8 +22,8 @@ class RevList
     @pending = []
     @paths   = {}
 
-    @objects = options.fetch(:objects, false)
     @missing = options.fetch(:missing, false)
+    @objects = options.fetch(:objects, false)
     @walk    = options.fetch(:walk, true)
 
     include_refs(repo.refs.list_all_refs) if options[:all]
