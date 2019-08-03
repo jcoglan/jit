@@ -26,6 +26,9 @@ class RevList
     @missing = options.fetch(:missing, false)
     @walk    = options.fetch(:walk, true)
 
+    @sort = options.fetch(:sort, nil)
+    @limited = true if @sort
+
     include_refs(repo.refs.list_all_refs) if options[:all]
     include_refs(repo.refs.list_branches) if options[:branches]
     include_refs(repo.refs.list_remotes)  if options[:remotes]
@@ -38,6 +41,7 @@ class RevList
 
   def each
     limit_list if @limited
+    sort_in_topological_order if @sort == :topological
     mark_edges_uninteresting if @objects
     traverse_commits { |commit| yield commit }
     traverse_pending { |object| yield object, @paths[object.oid] }
@@ -184,6 +188,40 @@ class RevList
     end
 
     commit.parents
+  end
+
+  def sort_in_topological_order
+    indegree = {}
+    stack    = []
+
+    @queue.each { |commit| indegree[commit.oid] = 0 }
+
+    @queue.each do |commit|
+      commit.parents.each do |oid|
+        indegree[oid] += 1 if indegree.has_key?(oid)
+      end
+    end
+
+    @queue.each do |commit|
+      stack.push(commit) if indegree[commit.oid] == 0
+    end
+
+    stack.reverse!
+    @queue = []
+
+    until stack.empty?
+      commit = stack.pop
+
+      commit.parents.each do |oid|
+        next unless indegree.has_key?(oid)
+
+        indegree[oid] -= 1
+        stack.push(load_commit(oid)) if indegree[oid] == 0
+      end
+
+      indegree.delete(commit.oid)
+      @queue.push(commit)
+    end
   end
 
   def traverse_commits

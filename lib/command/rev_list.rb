@@ -13,6 +13,8 @@ module Command
       @parser.on("--objects")        { @options[:objects] = true }
       @parser.on("--reverse")        { @options[:reverse] = true }
 
+      @parser.on("--topo-order") { @options[:sort] = :topological }
+
       @options[:walk] = true
       @parser.on("--do-walk") { @options[:walk] = true  }
       @parser.on("--no-walk") { @options[:walk] = false }
