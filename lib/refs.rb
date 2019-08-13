@@ -40,6 +40,8 @@ class Refs
   ORIG_HEAD = "ORIG_HEAD"
   SYMREF    = /^ref: (.+)$/
 
+  DEFAULT_BRANCH = "master"
+
   REFS_DIR    = Pathname.new("refs")
   HEADS_DIR   = REFS_DIR.join("heads")
   REMOTES_DIR = REFS_DIR.join("remotes")
@@ -49,6 +51,11 @@ class Refs
     @refs_path    = @pathname.join(REFS_DIR)
     @heads_path   = @pathname.join(HEADS_DIR)
     @remotes_path = @pathname.join(REMOTES_DIR)
+  end
+
+  def default_ref
+    path = @heads_path.join(DEFAULT_BRANCH)
+    SymRef.new(self, path.relative_path_from(@pathname).to_s)
   end
 
   def read_head

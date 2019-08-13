@@ -7,8 +7,6 @@ require_relative "../refs"
 module Command
   class Init < Base
 
-    DEFAULT_BRANCH = "master"
-
     def run
       path = @args.fetch(0, @dir)
 
@@ -30,8 +28,7 @@ module Command
       config.save
 
       refs = Refs.new(git_path)
-      path = File.join("refs", "heads", DEFAULT_BRANCH)
-      refs.update_head("ref: #{ path }")
+      refs.update_head("ref: #{ refs.default_ref.path }")
 
       puts "Initialized empty Jit repository in #{ git_path }"
       exit 0
