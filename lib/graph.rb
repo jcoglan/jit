@@ -164,6 +164,8 @@ class Graph
     when :post_merge then output_post_merge_line(buffer)
     when :collapsing then output_collapsing_line(buffer)
     end
+
+    buffer.pad(@width)
   end
 
   def output_padding_line(buffer)
@@ -174,14 +176,11 @@ class Graph
       buffer.write(" ")
     end
 
-    pad_horizontally(buffer)
-
     @prev_state = :padding
   end
 
   def output_skip_line(buffer)
     buffer.write("...")
-    pad_horizontally(buffer)
 
     if @num_parents >= 3 and @commit_index < @columns.size - 1
       update_state(:pre_commit)
@@ -212,8 +211,6 @@ class Graph
       end
       buffer.write(" ")
     end
-
-    pad_horizontally(buffer)
 
     @expansion_row += 1
 
@@ -252,8 +249,6 @@ class Graph
       end
       buffer.write(" ")
     end
-
-    pad_horizontally(buffer)
 
     if @num_parents > 1
       update_state(:post_merge)
@@ -313,8 +308,6 @@ class Graph
       end
     end
 
-    pad_horizontally(buffer)
-
     if mapping_correct?
       update_state(:padding)
     else
@@ -368,18 +361,11 @@ class Graph
       end
     end
 
-    pad_horizontally(buffer)
-
     @mapping = new_mapping
 
     if mapping_correct?
       update_state(:padding)
     end
-  end
-
-  def pad_horizontally(buffer)
-    diff = @width - buffer.size
-    buffer.data.concat(" " * diff) if diff > 0
   end
 
   def mapping_correct?

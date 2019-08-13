@@ -1,11 +1,16 @@
 class Graph
   class Buffer
 
-    attr_reader :data, :size
+    attr_reader :data
 
     def initialize
       @data = ""
       @size = 0
+    end
+
+    def pad(width)
+      diff = width - @size
+      @data.concat(" " * diff) if diff > 0
     end
 
     def write(string)
