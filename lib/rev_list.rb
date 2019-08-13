@@ -52,6 +52,16 @@ class RevList
     @diffs[key] ||= @repo.database.tree_diff(old_oid, new_oid, @filter)
   end
 
+  # todo: look at relevant parents if rewrite_parents,
+  # which is true in graph mode
+  def parents(commit)
+    parents = commit.parents.reject do |oid|
+      marked?(oid, :uninteresting) or marked?(oid, :treesame)
+    end
+
+    parents.map { |oid| load_commit(oid) }
+  end
+
   private
 
   def include_refs(refs)

@@ -17,12 +17,15 @@ module GraphHelper
     @database ||= Database.new(db_path)
   end
 
+  def commit_time
+    @time ||= Time.now
+  end
+
   def commit(parents, message)
     @commits ||= {}
-    @time    ||= Time.now
 
     parents = parents.map { |oid| @commits[oid] }
-    author  = Database::Author.new("A. U. Thor", "author@example.com", @time)
+    author  = Database::Author.new("A. U. Thor", "author@example.com", commit_time)
     commit  = Database::Commit.new(parents, "0" * 40, author, author, message)
 
     database.store(commit)
@@ -30,6 +33,6 @@ module GraphHelper
   end
 
   def chain(names)
-    names.each_cons(2) { |parent, message| commit([*parent], message) }
+    names.each_cons(2).map { |parent, message| commit([*parent], message) }.last
   end
 end
