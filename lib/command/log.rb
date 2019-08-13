@@ -1,5 +1,6 @@
 require_relative "./base"
 require_relative "./shared/print_diff"
+require_relative "../graph"
 require_relative "../rev_list"
 
 module Command
@@ -9,16 +10,24 @@ module Command
 
     def define_options
       @rev_list_opts = {}
+      @parser.on("--topo-order") { @rev_list_opts[:sort] = :topological }
+
       @parser.on("--all")      { @rev_list_opts[:all]      = true }
       @parser.on("--branches") { @rev_list_opts[:branches] = true }
       @parser.on("--remotes")  { @rev_list_opts[:remotes]  = true }
 
+      @options[:graph]    = false
       @options[:decorate] = "auto"
       @options[:abbrev]   = :auto
       @options[:format]   = "medium"
       @options[:patch]    = false
 
       define_print_diff_options
+
+      @parser.on "--graph" do
+        @options[:graph]      = true
+        @rev_list_opts[:sort] = :topological
+      end
 
       @parser.on "--decorate[=<format>]" do |format|
         @options[:decorate] = format || "short"
@@ -53,12 +62,23 @@ module Command
       @current_ref  = repo.refs.current_ref
 
       @rev_list = ::RevList.new(repo, @args, @rev_list_opts)
+      setup_graph if @options[:graph]
+
       @rev_list.each { |commit| show_commit(commit) }
 
       exit 0
     end
 
     private
+
+    def setup_graph
+      @graph  = Graph.new(@rev_list, @stdout, @isatty)
+      @stdout = @graph
+    end
+
+    def update_graph(commit)
+      @graph.update(commit) if defined? @graph
+    end
 
     def blank_line
       return if @options[:format] == "oneline"
@@ -67,6 +87,9 @@ module Command
     end
 
     def show_commit(commit)
+      blank_line
+      update_graph(commit)
+
       case @options[:format]
       when "medium"  then show_commit_medium(commit)
       when "oneline" then show_commit_oneline(commit)
@@ -78,7 +101,6 @@ module Command
     def show_commit_medium(commit)
       author = commit.author
 
-      blank_line
       puts fmt(:yellow, "commit #{ abbrev(commit) }") + decorate(commit)
 
       if commit.merge?
