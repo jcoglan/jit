@@ -46,7 +46,11 @@ class Database
     end
 
     def title_line
-      @message.lines.first
+      @message.lines
+              .drop_while { |line| blank?(line) }
+              .take_while { |line| not blank?(line) }
+              .join(" ")
+              .gsub(/\n(.)/, '\1')
     end
 
     def type
@@ -64,6 +68,12 @@ class Database
       lines.push(@message)
 
       lines.join("\n")
+    end
+
+    private
+
+    def blank?(line)
+      /^\s*$/.match(line)
     end
 
   end
