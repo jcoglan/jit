@@ -1,5 +1,7 @@
 require "forwardable"
+
 require_relative "./color"
+require_relative "./graph/buffer"
 
 class Graph
   COLORS = [
@@ -18,29 +20,6 @@ class Graph
   ]
 
   Column = Struct.new(:commit, :color)
-
-  class Buffer
-    attr_reader :data, :size
-
-    def initialize
-      @data = ""
-      @size = 0
-    end
-
-    def write(string)
-      @size += string.bytesize
-      @data.concat(string)
-    end
-
-    def write_column(column, string)
-      @size += string.bytesize
-
-      color  = column.color
-      string = Color.format(color, string) if color
-
-      @data.concat(string)
-    end
-  end
 
   extend Forwardable
   def_delegators :@output, :close_write
