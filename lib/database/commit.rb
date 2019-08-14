@@ -14,6 +14,7 @@ class Database
         break if line == ""
 
         key, value = line.split(/ +/, 2)
+        value = parse_multiline(scanner, value)
         headers[key].push(value)
       end
 
@@ -22,7 +23,23 @@ class Database
         headers["tree"].first,
         Author.parse(headers["author"].first),
         Author.parse(headers["committer"].first),
-        scanner.rest)
+        scanner.rest.lstrip)
+    end
+
+    def self.parse_multiline(scanner, value)
+      begin_line = /^-----BEGIN (.+)-----$/.match(value)
+      return value unless begin_line
+
+      name  = begin_line[1]
+      lines = []
+
+      loop do
+        line = scanner.scan_until(/\n/)
+        break if /^ *-----END #{ name }----- *$/.match(line)
+        lines.push(line)
+      end
+
+      lines.join("\n")
     end
 
     def initialize(parents, tree, author, committer, message)
