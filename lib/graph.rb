@@ -64,6 +64,25 @@ class Graph
     @output.puts(buffer.data)
   end
 
+  def each_column
+    seen_this = false
+
+    (0 .. @columns.size).each do |i|
+      column = @columns[i]
+
+      if i == @columns.size
+        break if seen_this
+        col_commit = @commit
+      else
+        col_commit = @columns[i].commit
+      end
+
+      seen_this = true if col_commit == @commit
+
+      yield i, col_commit, column, seen_this
+    end
+  end
+
   def update_commit(commit)
     @commit = commit
     @num_parents = @rev_list.parents(commit).size
@@ -87,22 +106,12 @@ class Graph
     @mapping     = []
     @width       = 0
 
-    seen_this = false
-
-    (0 .. @columns.size).each do |i|
-      if i == @columns.size
-        break if seen_this
-        col_commit = @commit
-      else
-        col_commit = @columns[i].commit
-      end
-
+    each_column do |i, col_commit, *|
       unless col_commit == @commit
         insert_into_new_columns(col_commit)
         next
       end
 
-      seen_this = true
       @commit_index = i
       @width += 2 if @num_parents == 0
 
@@ -205,20 +214,8 @@ class Graph
   end
 
   def output_commit_line(buffer)
-    seen_this = false
-
-    (0 .. @columns.size).each do |i|
-      column = @columns[i]
-
-      if i == @columns.size
-        break if seen_this
-        col_commit = @commit
-      else
-        col_commit = @columns[i].commit
-      end
-
+    each_column do |i, col_commit, column, seen_this|
       if col_commit == @commit
-        seen_this = true
         buffer.write("*")
         draw_octopus_merge(buffer) if @num_parents > 2
       elsif seen_this and @num_parents > 2
@@ -259,20 +256,8 @@ class Graph
   end
 
   def output_post_merge_line(buffer)
-    seen_this = false
-
-    (0 .. @columns.size).each do |i|
-      column = @columns[i]
-
-      if i == @columns.size
-        break if seen_this
-        col_commit = @commit
-      else
-        col_commit = column.commit
-      end
-
+    each_column do |i, col_commit, column, seen_this|
       if col_commit == @commit
-        seen_this = true
         parents = @rev_list.parents(@commit)
 
         par_column = find_new_column_by_commit(parents.first)
