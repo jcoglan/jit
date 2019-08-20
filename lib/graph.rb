@@ -87,13 +87,11 @@ class Graph
     @mapping     = []
     @width       = 0
 
-    seen_this  = false
-    in_columns = true
+    seen_this = false
 
     (0 .. @columns.size).each do |i|
       if i == @columns.size
         break if seen_this
-        in_columns = false
         col_commit = @commit
       else
         col_commit = @columns[i].commit
@@ -109,7 +107,7 @@ class Graph
       @width += 2 if @num_parents == 0
 
       @rev_list.parents(@commit).each do |parent|
-        increment_column_color if @num_parents > 1 or not in_columns
+        increment_column_color if @num_parents > 1 or i == @columns.size
         insert_into_new_columns(parent)
       end
     end
