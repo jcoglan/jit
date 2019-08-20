@@ -85,10 +85,10 @@ class Graph
     @columns     = @new_columns
     @new_columns = []
     @mapping     = []
+    @width       = 0
 
-    seen_this   = false
-    mapping_idx = 0
-    in_columns  = true
+    seen_this  = false
+    in_columns = true
 
     (0 .. @columns.size).each do |i|
       if i == @columns.size
@@ -100,36 +100,32 @@ class Graph
       end
 
       unless col_commit == @commit
-        insert_into_new_columns(col_commit, mapping_idx)
-        mapping_idx += 2
+        insert_into_new_columns(col_commit)
         next
       end
 
-      old_mapping_idx = mapping_idx
       seen_this = true
       @commit_index = i
+      @width += 2 if @num_parents == 0
 
       @rev_list.parents(@commit).each do |parent|
         increment_column_color if @num_parents > 1 or not in_columns
-        insert_into_new_columns(parent, mapping_idx)
-        mapping_idx += 2
+        insert_into_new_columns(parent)
       end
-
-      mapping_idx += 2 if mapping_idx == old_mapping_idx
     end
-
-    update_width(in_columns)
   end
 
-  def insert_into_new_columns(commit, mapping_idx)
+  def insert_into_new_columns(commit)
     idx = @new_columns.find_index { |col| col.commit == commit }
 
-    if idx
-      @mapping[mapping_idx] = idx
-    else
-      @mapping[mapping_idx] = @new_columns.size
-      @new_columns.push(Column.new(commit, find_commit_color(commit)))
+    unless idx
+      idx = @new_columns.size
+      column = Column.new(commit, find_commit_color(commit))
+      @new_columns.push(column)
     end
+
+    @mapping[@width] = idx
+    @width += 2
   end
 
   def increment_column_color
@@ -139,15 +135,6 @@ class Graph
   def find_commit_color(commit)
     column = @columns.find { |col| col.commit == commit }
     column ? column.color : @colors[@color]
-  end
-
-  def update_width(commit_in_columns)
-    max_cols = @columns.size + @num_parents
-
-    max_cols += 1 if @num_parents == 0
-    max_cols -= 1 if commit_in_columns
-
-    @width = 2 * max_cols
   end
 
   def update_state(state)
