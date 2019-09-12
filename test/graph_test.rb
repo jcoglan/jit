@@ -37,8 +37,6 @@ describe Graph do
   end
 
   def assert_graph(output)
-    check_git_log(output)
-
     revs   = RevList.new(@repo, @commits.values, :sort => :topological)
     stdout = StringIO.new
     graph  = Graph.new(revs, stdout, false)
@@ -50,13 +48,6 @@ describe Graph do
 
     stdout.rewind
     assert_equal output, stdout.read.gsub(/ *$/, "")
-  end
-
-  def check_git_log(output)
-    FileUtils.cd @path do
-      git_graph = `git log --format='%s' --graph #{ @commits.values.join(" ") }`
-      assert_equal output, git_graph.gsub(/ *$/, "")
-    end
   end
 
   def show_commit(graph, commit)
@@ -278,14 +269,35 @@ describe Graph do
 
     assert_graph <<~'GRAPH'
       * F
-      | *   E
-      | |\
-      |/ /
+      | * E
+      |/|
       | * D
       * | C
       |/
       * B
       * A
+    GRAPH
+  end
+
+  it "prints a merge further right with the first parent on the left" do
+    chain  [nil, "Y", "A", "B", "C"]
+    chain  ["B", "D"]
+    commit ["C", "D"], "E"
+    chain  ["C", "F"]
+    chain  ["Y", "Z"]
+
+    assert_graph <<~'GRAPH'
+      * Z
+      | * F
+      | | * E
+      | |/|
+      | | * D
+      | * | C
+      | |/
+      | * B
+      | * A
+      |/
+      * Y
     GRAPH
   end
 
@@ -300,10 +312,37 @@ describe Graph do
       * H
       | * G
       | | * F
-      | | | *   E
-      | | | |\
-      | |_|/ /
+      | | | * E
+      | |_|/|
       |/| | |
+      * | | | D
+      |/ / /
+      * | | C
+      |/ /
+      * | B
+      |/
+      * A
+    GRAPH
+  end
+
+  it "prints a merge where the first parent crosses two columns" do
+    chain  [nil, "A", "B", "C", "D", "E"]
+    commit ["E", "A"], "F"
+    chain  ["B", "G"]
+    chain  ["C", "H"]
+    chain  ["D", "J"]
+    chain  ["E", "K"]
+
+    assert_graph <<~'GRAPH'
+      * K
+      | * J
+      | | * H
+      | | | * G
+      | | | | * F
+      | |_|_|/|
+      |/| | | |
+      * | | | | E
+      |/ / / /
       * | | | D
       |/ / /
       * | | C
@@ -494,9 +533,8 @@ describe Graph do
       * H
       | * G
       | | * F
-      | | | *-.   E
-      | | | |\ \
-      | |_|/ / /
+      | | | *   E
+      | |_|/|\
       |/| | | |
       | | | | * D
       | | | |/
@@ -693,6 +731,30 @@ describe Graph do
     GRAPH
   end
 
+  it "prints a nested left-skewed octopus merge" do
+    chain  [nil, "A", "B"]
+    chain  ["A", "C"]
+    chain  ["A", "D"]
+    commit ["B", "C", "D"], "E"
+    commit ["E", "A"], "F"
+    chain  ["B", "G"]
+
+    assert_graph <<~'GRAPH'
+      * G
+      | *   F
+      | |\
+      | * \   E
+      |/|\ \
+      | | * | D
+      | | |/
+      | * | C
+      | |/
+      * | B
+      |/
+      * A
+    GRAPH
+  end
+
   describe "with multiline output" do
     def show_commit(graph, commit)
       graph.puts("commit #{ commit.oid }")
@@ -700,9 +762,6 @@ describe Graph do
       graph.puts("")
       graph.puts("    #{ commit.title_line }")
       graph.puts("")
-    end
-
-    def check_git_log(*)
     end
 
     it "prints the commit graph" do

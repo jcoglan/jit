@@ -19,6 +19,8 @@ class Graph
     [:bold, :cyan]
   ]
 
+  MERGE_CHARS = ["/", "|", "\\"]
+
   Column = Struct.new(:commit, :color)
 
   extend Forwardable
@@ -38,6 +40,8 @@ class Graph
 
     @state = @prev_state = :padding
     @commit_index = @prev_commit_index = 0
+
+    @merge_layout = nil
 
     @columns = @new_columns = []
     @mapping = []
@@ -113,16 +117,17 @@ class Graph
       end
 
       @commit_index = i
+      @merge_layout = nil
       @width += 2 if @num_parents == 0
 
       @rev_list.parents(@commit).each do |parent|
         increment_column_color if @num_parents > 1 or i == @columns.size
-        insert_into_new_columns(parent)
+        insert_into_new_columns(parent, i)
       end
     end
   end
 
-  def insert_into_new_columns(commit)
+  def insert_into_new_columns(commit, i = nil)
     idx = @new_columns.find_index { |col| col.commit == commit }
 
     unless idx
@@ -131,8 +136,19 @@ class Graph
       @new_columns.push(column)
     end
 
-    @mapping[@width] = idx
-    @width += 2
+    if @num_parents > 1 and i and @merge_layout == nil
+      dist  = i - idx
+      shift = (dist > 1) ? 2 * dist - 3 : 1
+
+      @merge_layout = (dist > 0) ? 0 : 1
+      mapping_idx = @width + (@merge_layout - 1) * shift
+      @width += 2 * @merge_layout
+    else
+      mapping_idx = @width
+      @width += 2
+    end
+
+    @mapping[mapping_idx] = idx
   end
 
   def increment_column_color
@@ -151,7 +167,12 @@ class Graph
 
   def needs_pre_commit_line
     @num_parents >= 3 and
-      @commit_index < @columns.size - 1
+      @commit_index < @columns.size - 1 and
+      @expansion_row < num_expansion_rows
+  end
+
+  def num_expansion_rows
+    2 * (@num_parents + @merge_layout - 3)
   end
 
   def output_next_line(buffer)
@@ -189,7 +210,6 @@ class Graph
   end
 
   def output_pre_commit_line(buffer)
-    num_expansion_rows = 2 * (@num_parents - 2)
     seen_this = false
 
     @columns.each_with_index do |column, i|
@@ -213,7 +233,7 @@ class Graph
 
     @expansion_row += 1
 
-    if @expansion_row >= num_expansion_rows
+    unless needs_pre_commit_line
       update_state(:commit)
     end
   end
@@ -247,7 +267,7 @@ class Graph
   end
 
   def draw_octopus_merge(buffer)
-    dashless_parents  = 2
+    dashless_parents  = 3 - @merge_layout
     dashful_parents   = @num_parents - dashless_parents
     added_columns     = @new_columns.size - @columns.size
     parent_in_columns = @num_parents - added_columns
@@ -261,17 +281,21 @@ class Graph
   end
 
   def output_post_merge_line(buffer)
+    first_parent = @rev_list.parents(@commit).first
+    seen_parent  = false
+
     each_column do |i, col_commit, column, seen_this|
       if col_commit == @commit
-        parents = @rev_list.parents(@commit)
+        idx = @merge_layout
 
-        par_column = find_new_column_by_commit(parents.first)
-        buffer.write_column(par_column, "|")
-
-        parents.drop(1).each do |parent|
+        @rev_list.parents(@commit).each do |parent|
           par_column = find_new_column_by_commit(parent)
-          buffer.write_column(par_column, "\\")
-          buffer.write(" ")
+          buffer.write_column(par_column, MERGE_CHARS[idx])
+          if idx == 2
+            buffer.write(" ")
+          else
+            idx += 1
+          end
         end
 
       elsif seen_this
@@ -279,8 +303,12 @@ class Graph
         buffer.write(" ")
       else
         buffer.write_column(column, "|")
-        buffer.write(" ")
+        unless @merge_layout == 0 and i == @commit_index - 1
+          buffer.write(seen_parent ? "_" : " ")
+        end
       end
+
+      seen_parent = true if col_commit == first_parent
     end
 
     if mapping_correct?
