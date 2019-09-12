@@ -93,7 +93,7 @@ class Graph
 
     if @state != :padding
       @state = :skip
-    elsif @num_parents >= 3 and @commit_index < @columns.size - 1
+    elsif needs_pre_commit_line
       @state = :pre_commit
     else
       @state = :commit
@@ -149,6 +149,11 @@ class Graph
     @state = state
   end
 
+  def needs_pre_commit_line
+    @num_parents >= 3 and
+      @commit_index < @columns.size - 1
+  end
+
   def output_next_line(buffer)
     case @state
     when :padding    then output_padding_line(buffer)
@@ -176,7 +181,7 @@ class Graph
   def output_skip_line(buffer)
     buffer.write("...")
 
-    if @num_parents >= 3 and @commit_index < @columns.size - 1
+    if needs_pre_commit_line
       update_state(:pre_commit)
     else
       update_state(:commit)
