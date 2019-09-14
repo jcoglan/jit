@@ -44,7 +44,7 @@ class Graph
     @merge_layout = nil
 
     @columns = @new_columns = []
-    @mapping = []
+    @mapping = @old_mapping = []
 
     @edges_added = @prev_edges_added = 0
   end
@@ -256,6 +256,8 @@ class Graph
         else
           buffer.write_column(column, "|")
         end
+      elsif @prev_state == :collapsing and @old_mapping[2 * i + 1] == i and @mapping[2 * i] < i
+        buffer.write_column(column, "/")
       else
         buffer.write_column(column, "|")
       end
@@ -338,44 +340,45 @@ class Graph
     horiz_edge        = -1
     horiz_edge_target = -1
 
-    new_mapping = []
+    @old_mapping = @mapping
+    @mapping = []
 
-    @mapping.each_with_index do |target, i|
+    @old_mapping.each_with_index do |target, i|
       next unless target
 
       if 2 * target == i
-        new_mapping[i] = target
-      elsif new_mapping[i - 1] == nil
-        new_mapping[i - 1] = target
+        @mapping[i] = target
+      elsif @mapping[i - 1] == nil
+        @mapping[i - 1] = target
         if horiz_edge == -1
           horiz_edge = i
           horiz_edge_target = target
-          (2 * target + 3 ... i - 2).step(2) { |j| new_mapping[j] = target }
+          (2 * target + 3 ... i - 2).step(2) { |j| @mapping[j] = target }
         end
-      elsif new_mapping[i - 1] != target
-        new_mapping[i - 2] = target
+      elsif @mapping[i - 1] != target
+        @mapping[i - 2] = target
         horiz_edge = i if horiz_edge == -1
       end
     end
 
-    new_mapping.each_with_index do |target, i|
+    @mapping.each_with_index do |target, i|
       if target == nil
         buffer.write(" ")
       elsif 2 * target == i
         buffer.write_column(@new_columns[target], "|")
       elsif target == horiz_edge_target and i != horiz_edge - 1
-        new_mapping[i] = nil unless i == 2 * target + 3
+        @mapping[i] = nil unless i == 2 * target + 3
         used_horizontal = true
         buffer.write_column(@new_columns[target], "_")
       else
         if used_horizontal and i < horiz_edge
-          new_mapping[i] = nil
+          @mapping[i] = nil
         end
         buffer.write_column(@new_columns[target], "/")
       end
     end
 
-    @mapping = new_mapping
+    @old_mapping = @mapping
 
     if mapping_correct?
       update_state(:padding)

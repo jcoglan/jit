@@ -160,7 +160,7 @@ describe Graph do
       |/| |
       * | | C
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -317,9 +317,9 @@ describe Graph do
       |/| | |
       * | | | D
       |/ / /
-      * | | C
+      * / / C
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -343,11 +343,11 @@ describe Graph do
       |/| | | |
       * | | | | E
       |/ / / /
-      * | | | D
+      * / / / D
       |/ / /
-      * | | C
+      * / / C
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -385,7 +385,7 @@ describe Graph do
       |/| |
       * | | C
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -450,7 +450,7 @@ describe Graph do
       | * | C
       * | | D
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -470,7 +470,7 @@ describe Graph do
       | * | D
       * | | C
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -492,7 +492,7 @@ describe Graph do
       | * | D
       * | | C
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -567,9 +567,9 @@ describe Graph do
       | | | * E
       | | * | D
       | | |/
-      | * | C
+      | * / C
       | |/
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -590,9 +590,9 @@ describe Graph do
       | * | | E
       * | | | D
       |/ / /
-      * | | C
+      * / / C
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -619,9 +619,9 @@ describe Graph do
       | | |/|
       | | | * C
       | | |/
-      * | | B
+      * | / B
       |/ /
-      * | A
+      * / A
       |/
       * Z
     GRAPH
@@ -645,7 +645,7 @@ describe Graph do
       | | | * D
       | | |/
       | |/|
-      * | | C
+      * / | C
       |/ /
       | * B
       |/
@@ -698,7 +698,7 @@ describe Graph do
       | * | D
       * | | C
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -722,7 +722,7 @@ describe Graph do
       |/| |
       * | | C
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -747,9 +747,9 @@ describe Graph do
       | | * | E
       | * | | D
       | |/ /
-      * | | C
+      * / / C
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -772,9 +772,9 @@ describe Graph do
       | | * | E
       | * | | D
       | |/ /
-      * | | C
+      * / / C
       |/ /
-      * | B
+      * / B
       |/
       * A
     GRAPH
@@ -799,9 +799,9 @@ describe Graph do
       | | | * | E
       | | * | | D
       | | |/ /
-      | * | | C
+      | * / / C
       | |/ /
-      | * | B
+      | * / B
       | |/
       | * A
       |/
@@ -825,9 +825,9 @@ describe Graph do
       |/|\ \
       | | * | D
       | | |/
-      | * | C
+      | * / C
       | |/
-      * | B
+      * / B
       |/
       * A
     GRAPH
