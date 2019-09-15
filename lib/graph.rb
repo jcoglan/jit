@@ -45,6 +45,8 @@ class Graph
 
     @columns = @new_columns = []
     @mapping = []
+
+    @edges_added = @prev_edges_added = 0
   end
 
   def update(commit)
@@ -94,6 +96,9 @@ class Graph
     @prev_commit_index = @commit_index
     update_columns
     @expansion_row = 0
+
+    @prev_edges_added = @edges_added
+    @edges_added = @merge_layout ? @num_parents + @merge_layout - 2 : 0
 
     if @state != :padding
       @state = :skip
@@ -243,10 +248,10 @@ class Graph
       if col_commit == @commit
         buffer.write("*")
         draw_octopus_merge(buffer) if @num_parents > 2
-      elsif seen_this and @num_parents > 2
+      elsif seen_this and @edges_added > 1
         buffer.write_column(column, "\\")
-      elsif seen_this and @num_parents == 2
-        if @prev_state == :post_merge and @prev_commit_index < i
+      elsif seen_this and @edges_added == 1
+        if @prev_state == :post_merge and @prev_edges_added > 0 and @prev_commit_index < i
           buffer.write_column(column, "\\")
         else
           buffer.write_column(column, "|")
@@ -298,8 +303,14 @@ class Graph
           end
         end
 
+        buffer.write(" ") if @edges_added == 0
+
       elsif seen_this
-        buffer.write_column(column, "\\")
+        if @edges_added > 0
+          buffer.write_column(column, "\\")
+        else
+          buffer.write_column(column, "|")
+        end
         buffer.write(" ")
       else
         buffer.write_column(column, "|")

@@ -476,6 +476,84 @@ describe Graph do
     GRAPH
   end
 
+  it "prints a nested left-skewed merge" do
+    chain  [nil, "A", "B", "C"]
+    chain  ["B", "D"]
+    commit ["C", "D"], "E"
+    commit ["E", "A"], "F"
+    chain  ["C", "G"]
+
+    assert_graph <<~'GRAPH'
+      * G
+      | *   F
+      | |\
+      | * | E
+      |/| |
+      | * | D
+      * | | C
+      |/ /
+      * | B
+      |/
+      * A
+    GRAPH
+  end
+
+  it "prints a nested right-skewed merge after a left-skewed one (1)" do
+    chain  [nil, "A", "B", "F"]
+    chain  ["A", "C"]
+    commit ["B", "C"], "D"
+    commit ["A", "D"], "E"
+    commit ["E", "F"], "G"
+    chain  ["A", "H"]
+
+    assert_graph <<~'GRAPH'
+      * H
+      | *   G
+      | |\
+      | | * F
+      | * | E
+      |/| |
+      | * |   D
+      | |\ \
+      | | |/
+      | |/|
+      | | * C
+      | |/
+      |/|
+      | * B
+      |/
+      * A
+    GRAPH
+  end
+
+  it "prints a nested right-skewed merge after a left-skewed one (2)" do
+    chain  [nil, "A", "B"]
+    chain  ["A", "C"]
+    commit ["B", "C"], "D"
+    commit ["A", "D"], "E"
+    chain  ["C", "F"]
+    commit ["E", "F"], "G"
+    chain  ["A", "H"]
+
+    assert_graph <<~'GRAPH'
+      * H
+      | *   G
+      | |\
+      | | * F
+      | * | E
+      |/| |
+      | * |   D
+      | |\ \
+      | | |/
+      | | * C
+      | |/
+      |/|
+      | * B
+      |/
+      * A
+    GRAPH
+  end
+
   it "prints an octopus merge" do
     chain  [nil, "A", "B"]
     chain  ["A", "C"]
