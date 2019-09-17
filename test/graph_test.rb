@@ -444,9 +444,8 @@ describe Graph do
       | *   G
       | |\
       | | * F
-      * | |   E
-      |\ \ \
-      | |/ /
+      * | | E
+      |\| |
       | * | C
       * | | D
       |/ /
@@ -498,6 +497,29 @@ describe Graph do
     GRAPH
   end
 
+  it "prints a left-skewed right-joined merge" do
+    chain  [nil, "A", "B"]
+    chain  ["A", "C", "E"]
+    commit ["B", "C"], "D"
+    commit ["D", "E"], "F"
+    commit ["B", "F"], "G"
+
+    assert_graph <<~'GRAPH'
+      *   G
+      |\
+      | *   F
+      | |\
+      | | * E
+      | * | D
+      |/| |
+      | |/
+      | * C
+      * | B
+      |/
+      * A
+    GRAPH
+  end
+
   it "prints a nested right-skewed merge after a left-skewed one (1)" do
     chain  [nil, "A", "B", "F"]
     chain  ["A", "C"]
@@ -542,9 +564,8 @@ describe Graph do
       | | * F
       | * | E
       |/| |
-      | * |   D
-      | |\ \
-      | | |/
+      | * | D
+      | |\|
       | | * C
       | |/
       |/|
@@ -755,6 +776,31 @@ describe Graph do
     GRAPH
   end
 
+  it "prints space around a right-joined octopus merge" do
+    chain  [nil, "A", "B"]
+    chain  ["A", "C"]
+    chain  ["A", "D"]
+    commit ["B", "C", "D"], "E"
+    chain  ["D", "F"]
+    commit ["E", "F"], "G"
+
+    assert_graph <<~'GRAPH'
+      *   G
+      |\
+      | * F
+      | |
+      |  \
+      *-. | E
+      |\ \|
+      | | * D
+      | * | C
+      | |/
+      * / B
+      |/
+      * A
+    GRAPH
+  end
+
   it "prints a nested octopus merge" do
     chain  [nil, "A", "B", "C"]
     chain  ["B", "D"]
@@ -828,6 +874,234 @@ describe Graph do
       | * / C
       | |/
       * / B
+      |/
+      * A
+    GRAPH
+  end
+
+  it "prints a merge nested under an octopus merge" do
+    chain  [nil, "A", "B"]
+    chain  ["A", "C", "D", "E"]
+    commit ["B", "E"], "F"
+    commit ["F", "D", "C"], "G"
+
+    assert_graph <<~'GRAPH'
+      *-.   G
+      |\ \
+      * \ \   F
+      |\ \ \
+      | * | | E
+      | |/ /
+      | * / D
+      | |/
+      | * C
+      * | B
+      |/
+      * A
+    GRAPH
+  end
+
+  it "prints a merge nested under a right-joined octopus merge" do
+    chain  [nil, "A", "B", "C", "D"]
+    commit ["A", "D"], "E"
+    commit ["E", "C", "B"], "F"
+    commit ["F", "B"], "G"
+
+    assert_graph <<~'GRAPH'
+      *   G
+      |\
+      | \
+      |  \
+      *-. | F
+      |\ \|
+      * | |   E
+      |\ \ \
+      | * | | D
+      | |/ /
+      | * / C
+      | |/
+      | * B
+      |/
+      * A
+    GRAPH
+  end
+
+  describe "octopus merges with a column to the right matching a non-final parent" do
+    it "prints a merge with two crossing parents" do
+      chain  [nil, "A", "B"]
+      chain  ["A", "C"]
+      chain  ["A", "D"]
+      commit ["B", "C", "D"], "E"
+      commit ["D", "C"], "F"
+
+      assert_graph <<~'GRAPH'
+        *   F
+        |\
+        | | *-.   E
+        | | |\ \
+        | | |/ /
+        | |/| /
+        | |_|/
+        |/| |
+        * | | D
+        | * | C
+        |/ /
+        | * B
+        |/
+        * A
+      GRAPH
+    end
+
+    it "prints a merge with a column matching the penultimate parent" do
+      chain  [nil, "A", "B"]
+      chain  ["A", "C"]
+      chain  ["A", "D"]
+      commit ["B", "C", "D"], "E"
+      chain  ["C", "F"]
+      commit ["E", "F"], "G"
+      chain  ["D", "H"]
+
+      assert_graph <<~'GRAPH'
+        * H
+        | *   G
+        | |\
+        | | * F
+        | | |
+        | |  \
+        | *-. \   E
+        | |\ \ \
+        | |_|/ /
+        |/| | /
+        | | |/
+        * | | D
+        | | * C
+        | |/
+        |/|
+        | * B
+        |/
+        * A
+      GRAPH
+    end
+
+    it "prints a left-skewed merge whose last parent crosses" do
+      chain  [nil, "A", "B"]
+      chain  ["A", "C", "D"]
+      chain  ["A", "E"]
+      commit ["B", "D", "E"], "F"
+      chain  ["C", "G"]
+      commit ["E", "B", "F", "G"], "H"
+
+      assert_graph <<~'GRAPH'
+        *---.   H
+        |\ \ \
+        | | | * G
+        | | * |   F
+        | |/|\ \
+        | |_|/ /
+        |/| | |
+        * | | | E
+        | | * | D
+        | | |/
+        | | * C
+        | |/
+        |/|
+        | * B
+        |/
+        * A
+      GRAPH
+    end
+
+    it "prints a left-skewed merge with a column matching the penultimate parent" do
+      chain  [nil, "A", "B"]
+      chain  ["A", "C"]
+      chain  ["A", "D"]
+      commit ["B", "C", "D"], "E"
+      chain  ["C", "F"]
+      commit ["D", "B", "E", "F"], "G"
+
+      assert_graph <<~'GRAPH'
+        *---.   G
+        |\ \ \
+        | | | * F
+        | | * |   E
+        | |/|\ \
+        | |_|/ /
+        |/| | /
+        | | |/
+        * | | D
+        | | * C
+        | |/
+        |/|
+        | * B
+        |/
+        * A
+      GRAPH
+    end
+  end
+
+  it "prints a merge nested to the left of an octopus merge" do
+    chain  [nil, "A", "B", "C"]
+    chain  ["A", "D", "E"]
+    chain  ["A", "F", "G"]
+    commit ["E", "G"], "H"
+    commit ["F", "D", "B"], "J"
+    commit ["H", "J"], "K"
+    commit ["C", "K"], "L"
+
+    assert_graph <<~'GRAPH'
+      *   L
+      |\
+      | *   K
+      | |\
+      | | *-.   J
+      | | |\ \
+      | * | \ \   H
+      | |\ \ \ \
+      | | * | | | G
+      | | |/ / /
+      | | * | | F
+      | * | | | E
+      | | |/ /
+      | |/| |
+      | * | | D
+      | |/ /
+      * | / C
+      | |/
+      |/|
+      * | B
+      |/
+      * A
+    GRAPH
+  end
+
+  it "prints a right-joined merge to the left of an octopus merge" do
+    chain  [nil, "A", "B", "C"]
+    chain  ["A", "D", "E"]
+    chain  ["D", "F"]
+    commit ["E", "F"], "G"
+    commit ["F", "E", "B"], "H"
+    commit ["G", "H"], "J"
+    commit ["C", "J"], "K"
+
+    assert_graph <<~'GRAPH'
+      *   K
+      |\
+      | *   J
+      | |\
+      | | *-.   H
+      | | |\ \
+      | * | | | G
+      | |\| | |
+      | | |/ /
+      | |/| |
+      | | * | F
+      | * | | E
+      | |/ /
+      | * | D
+      * | | C
+      | |/
+      |/|
+      * | B
       |/
       * A
     GRAPH

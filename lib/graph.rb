@@ -97,9 +97,6 @@ class Graph
     update_columns
     @expansion_row = 0
 
-    @prev_edges_added = @edges_added
-    @edges_added = @merge_layout ? @num_parents + @merge_layout - 2 : 0
-
     if @state != :padding
       @state = :skip
     elsif needs_pre_commit_line
@@ -114,6 +111,9 @@ class Graph
     @new_columns = []
     @mapping     = []
     @width       = 0
+
+    @prev_edges_added = @edges_added
+    @edges_added = 0
 
     each_column do |i, col_commit, *|
       unless col_commit == @commit
@@ -146,8 +146,14 @@ class Graph
       shift = (dist > 1) ? 2 * dist - 3 : 1
 
       @merge_layout = (dist > 0) ? 0 : 1
+      @edges_added  = @num_parents + @merge_layout - 2
+
       mapping_idx = @width + (@merge_layout - 1) * shift
       @width += 2 * @merge_layout
+
+    elsif @edges_added > 0 and idx == @mapping[@width - 2]
+      mapping_idx = @width - 2
+      @edges_added = -1
     else
       mapping_idx = @width
       @width += 2
@@ -295,11 +301,11 @@ class Graph
       if col_commit == @commit
         idx = @merge_layout
 
-        @rev_list.parents(@commit).each do |parent|
+        @rev_list.parents(@commit).each_with_index do |parent, j|
           par_column = find_new_column_by_commit(parent)
           buffer.write_column(par_column, MERGE_CHARS[idx])
           if idx == 2
-            buffer.write(" ")
+            buffer.write(" ") if @edges_added >= 0 or j < @num_parents - 1
           else
             idx += 1
           end
