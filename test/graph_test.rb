@@ -907,6 +907,8 @@ describe Graph do
     commit ["E", "C", "B"], "F"
     commit ["F", "B"], "G"
 
+    # todo fix line E
+
     assert_graph <<~'GRAPH'
       *   G
       |\
@@ -917,6 +919,125 @@ describe Graph do
       * | |   E
       |\ \ \
       | * | | D
+      | |/ /
+      | * / C
+      | |/
+      | * B
+      |/
+      * A
+    GRAPH
+  end
+
+  it "prints a left-skewed merge under a left-skewed octopus merge" do
+    chain  [nil, "A", "B", "C"]
+    commit ["A", "C"], "D"
+    commit ["D", "C", "B"], "E"
+    chain  ["D", "F"]
+    chain  ["A", "G"]
+
+    assert_graph <<~'GRAPH'
+      * G
+      | * F
+      | | *   E
+      | |/|\
+      | * | | D
+      |/| | |
+      | |/ /
+      | * / C
+      | |/
+      | * B
+      |/
+      * A
+    GRAPH
+  end
+
+  it "prints a left-skewed merge under a left-skewed octopus merge with concurrent parents" do
+    chain  [nil, "A", "B", "C", "D", "E"]
+    chain  ["C", "F", "G"]
+    commit ["B", "A"], "H"
+    commit ["H", "F", "D"], "J"
+    commit ["H", "J"], "K"
+    commit ["B", "K"], "L"
+    commit ["G", "L"], "M"
+    commit ["E", "M"], "N"
+
+    assert_graph <<~'GRAPH'
+      *   N
+      |\
+      | *   M
+      | |\
+      | | *   L
+      | | |\
+      | | | *   K
+      | | | |\
+      | | | | *   J
+      | | | |/|\
+      | | | * | | H
+      | | |/| | |
+      | * | | | | G
+      | | |_|/ /
+      | |/| | |
+      | * | | | F
+      * | | | | E
+      | |_|_|/
+      |/| | |
+      * | | | D
+      |/ / /
+      * / / C
+      |/ /
+      * / B
+      |/
+      * A
+    GRAPH
+  end
+
+  it "prints a left-skewed merge under a left-skewed octopus merge with more recent parents" do
+    chain  [nil, "A", "B", "C"]
+    commit ["A", "C"], "D"
+    chain  ["C", "E"]
+    chain  ["B", "F"]
+    commit ["D", "E", "F"], "G"
+    chain  ["D", "H"]
+    chain  ["A", "J"]
+
+    assert_graph <<~'GRAPH'
+      * J
+      | * H
+      | | *   G
+      | |/|\
+      | | | * F
+      | | * | E
+      | * | | D
+      |/| | |
+      | |/ /
+      | * / C
+      | |/
+      | * B
+      |/
+      * A
+    GRAPH
+  end
+
+  it "prints a left-tracking edge under a left-skewed octopus merge" do
+    chain  [nil, "A", "B", "C", "D", "E"]
+    commit ["D", "C", "B"], "F"
+    commit ["D", "F"], "G"
+    commit ["E", "G"], "H"
+    chain  ["A", "J"]
+
+    # todo possibly fix line E
+
+    assert_graph <<~'GRAPH'
+      * J
+      | *   H
+      | |\
+      | | *   G
+      | | |\
+      | | | *   F
+      | | |/|\
+      | * | | | E
+      | |/ / /
+      | * / / D
       | |/ /
       | * / C
       | |/
