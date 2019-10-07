@@ -182,8 +182,12 @@ class Graph
       @expansion_row < num_expansion_rows
   end
 
+  def num_dashed_parents
+    @num_parents + @merge_layout - 3
+  end
+
   def num_expansion_rows
-    2 * (@num_parents + @merge_layout - 3)
+    2 * num_dashed_parents
   end
 
   def output_next_line(buffer)
@@ -280,16 +284,14 @@ class Graph
   end
 
   def draw_octopus_merge(buffer)
-    dashless_parents  = 3 - @merge_layout
-    dashful_parents   = @num_parents - dashless_parents
-    added_columns     = @new_columns.size - @columns.size
-    parent_in_columns = @num_parents - added_columns
-    first_column      = @commit_index + dashless_parents - parent_in_columns
+    dashed_parents = num_dashed_parents
 
-    (0 ... dashful_parents).each do |i|
-      buffer.write_column(@new_columns[i + first_column], "-")
-      ch = (i == dashful_parents - 1) ? "." : "-"
-      buffer.write_column(@new_columns[i + first_column], ch)
+    dashed_parents.times do |i|
+      j = @mapping[2 * (@commit_index + i + 2)]
+      column = @new_columns[j]
+
+      buffer.write_column(column, "-")
+      buffer.write_column(column, (i == dashed_parents - 1) ? "." : "-")
     end
   end
 
