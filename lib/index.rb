@@ -3,6 +3,7 @@ require "strscan"
 
 require_relative "./index/checksum"
 require_relative "./index/entry"
+require_relative "./index/tree_cache"
 require_relative "./lockfile"
 
 class Index
@@ -13,7 +14,9 @@ class Index
   SIGNATURE     = "DIRC"
   VERSION       = 2
 
-  EXTENSIONS = {}
+  EXTENSIONS = {
+    TreeCache.ext_name => TreeCache
+  }
 
   def initialize(pathname)
     @pathname = pathname
@@ -137,6 +140,10 @@ class Index
 
   def tracked?(path)
     tracked_file?(path) or tracked_directory?(path)
+  end
+
+  def tree_cache
+    @extensions[TreeCache.ext_name]
   end
 
   private
