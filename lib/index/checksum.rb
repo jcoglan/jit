@@ -9,6 +9,8 @@ class Index
 
     def initialize(file)
       @file   = file
+      @size   = file.respond_to?(:size) ? file.size : 0
+      @read   = 0
       @digest = Digest::SHA1.new
     end
 
@@ -28,8 +30,13 @@ class Index
         raise EndOfFile, "Unexpected end-of-file while reading index"
       end
 
+      @read += size
       @digest.update(data)
       data
+    end
+
+    def remaining?
+      @read < @size - CHECKSUM_SIZE
     end
 
     def verify_checksum

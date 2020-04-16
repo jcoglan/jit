@@ -1,4 +1,5 @@
 require "set"
+require "strscan"
 
 require_relative "./index/checksum"
 require_relative "./index/entry"
@@ -11,6 +12,8 @@ class Index
   HEADER_FORMAT = "a4N2"
   SIGNATURE     = "DIRC"
   VERSION       = 2
+
+  EXTENSIONS = {}
 
   def initialize(pathname)
     @pathname = pathname
@@ -36,6 +39,7 @@ class Index
       reader = Checksum.new(file)
       count = read_header(reader)
       read_entries(reader, count)
+      read_extensions(reader)
       reader.verify_checksum
     end
   ensure
@@ -142,6 +146,10 @@ class Index
     @keys    = SortedSet.new
     @parents = Hash.new { |hash, key| hash[key] = Set.new }
     @changed = false
+
+    @extensions = Hash.new do |hash, key|
+      hash[key] = EXTENSIONS[key]&.new(self)
+    end
   end
 
   def discard_conflicts(entry)
@@ -212,6 +220,16 @@ class Index
       end
 
       store_entry(Entry.parse(entry))
+    end
+  end
+
+  def read_extensions(reader)
+    while reader.remaining?
+      name, size = reader.read(8).unpack("A4N")
+      scanner    = StringScanner.new(reader.read(size))
+      extension  = @extensions[name]
+
+      extension&.parse(scanner)
     end
   end
 end
