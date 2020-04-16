@@ -53,7 +53,7 @@ class Index
     end
 
     def parent_directories
-      Pathname.new(path).descend.to_a[0..-2]
+      [Pathname.new("")] + Pathname.new(path).descend.to_a[0..-2]
     end
 
     def basename

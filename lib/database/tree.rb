@@ -27,7 +27,7 @@ class Database
       root = Tree.new
 
       entries.each do |entry|
-        root.add_entry(entry.parent_directories, entry)
+        root.add_entry(entry.parent_directories.drop(1), entry)
       end
 
       root

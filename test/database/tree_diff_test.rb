@@ -6,7 +6,7 @@ require "database"
 
 FakeEntry = Struct.new(:path, :oid, :mode) do
   def parent_directories
-    Pathname.new(path).descend.to_a[0..-2]
+    [nil] + Pathname.new(path).descend.to_a[0..-2]
   end
 
   def basename
