@@ -3,6 +3,7 @@ require "fileutils"
 require "pathname"
 
 require "database"
+require "repository/tree_writer"
 
 FakeEntry = Struct.new(:path, :oid, :mode) do
   def parent_directories
@@ -32,7 +33,7 @@ describe Database::TreeDiff do
       FakeEntry.new(path, blob.oid, 0100644)
     end
 
-    tree = Database::Tree.build(entries)
+    tree = Repository::TreeWriter::Tree.build(entries)
     tree.traverse { |t| database.store(t) }
 
     tree.oid

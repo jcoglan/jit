@@ -63,9 +63,7 @@ module Command
     end
 
     def write_tree
-      root = Database::Tree.build(repo.index.each_entry)
-      root.traverse { |tree| repo.database.store(tree) }
-      root
+      Repository::TreeWriter.new(repo).build_tree
     end
 
     def current_author

@@ -3,6 +3,7 @@ class Database
 
     ENTRY_FORMAT = "Z*H40"
     TREE_MODE    = 040000
+    TREE_TYPE    = "tree"
 
     attr_accessor :oid
     attr_reader :entries
@@ -23,51 +24,12 @@ class Database
       Tree.new(entries)
     end
 
-    def self.build(entries)
-      root = Tree.new
-
-      entries.each do |entry|
-        root.add_entry(entry.parent_directories.drop(1), entry)
-      end
-
-      root
-    end
-
     def initialize(entries = {})
       @entries = entries
     end
 
-    def add_entry(parents, entry)
-      if parents.empty?
-        @entries[entry.basename] = entry
-      else
-        tree = @entries[parents.first.basename] ||= Tree.new
-        tree.add_entry(parents.drop(1), entry)
-      end
-    end
-
-    def traverse(&block)
-      @entries.each do |name, entry|
-        entry.traverse(&block) if entry.is_a?(Tree)
-      end
-      block.call(self)
-    end
-
-    def mode
-      TREE_MODE
-    end
-
     def type
-      "tree"
-    end
-
-    def to_s
-      entries = @entries.map do |name, entry|
-        mode = entry.mode.to_s(8)
-        ["#{ mode } #{ name }", entry.oid].pack(ENTRY_FORMAT)
-      end
-
-      entries.join("")
+      TREE_TYPE
     end
 
   end
