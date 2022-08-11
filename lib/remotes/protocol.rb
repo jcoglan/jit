@@ -20,6 +20,7 @@ class Remotes
     end
 
     def send_packet(line)
+      STDERR.puts [:pkt_send, line].inspect
       return @output.write("0000") if line == nil
 
       line = append_caps(line)
@@ -30,7 +31,7 @@ class Remotes
       @output.write("\n")
     end
 
-    def recv_packet
+    def recv_packet_x
       head = @input.read(4)
       return head unless /[0-9a-f]{4}/ =~ head
 
@@ -39,6 +40,12 @@ class Remotes
 
       line = @input.read(size - 4).sub(/\n$/, "")
       detect_caps(line)
+    end
+
+    def recv_packet
+      recv_packet_x.tap do |value|
+        STDERR.puts [:pkt_recv, value].inspect
+      end
     end
 
     def recv_until(terminator)
@@ -75,6 +82,7 @@ class Remotes
       caps  = (parts.size == n) ? parts.pop : ""
 
       @caps_remote = caps.split(/ +/)
+      STDERR.puts [:caps, @caps_remote].inspect
       parts.join(" ")
     end
 

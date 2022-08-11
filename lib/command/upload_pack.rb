@@ -26,11 +26,13 @@ module Command
     private
 
     def recv_want_list
+      STDERR.puts [:recv_want_list].inspect
       @wanted = recv_oids("want", nil)
       exit 0 if @wanted.empty?
     end
 
     def recv_have_list
+      STDERR.puts [:recv_have_list].inspect
       @remote_has = recv_oids("have", "done")
       @conn.send_packet("NAK")
     end
@@ -40,6 +42,7 @@ module Command
       result  = Set.new
 
       @conn.recv_until(terminator) do |line|
+        STDERR.puts [:recv, [prefix, terminator], line].inspect
         result.add(pattern.match(line)[1])
       end
       result
