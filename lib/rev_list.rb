@@ -26,6 +26,9 @@ class RevList
     @missing = options.fetch(:missing, false)
     @walk    = options.fetch(:walk, true)
 
+    @boundary = options.fetch(:boundary, false)
+    @boundary_commits = []
+
     include_refs(repo.refs.list_all_refs) if options[:all]
     include_refs(repo.refs.list_branches) if options[:branches]
     include_refs(repo.refs.list_remotes)  if options[:remotes]
@@ -101,14 +104,22 @@ class RevList
   def limit_list
     while still_interesting?
       commit = @queue.shift
-      add_parents(commit)
 
       unless marked?(commit.oid, :uninteresting)
         @output.push(commit)
+        mark(commit.oid, :shown)
       end
+      add_parents(commit)
     end
 
     @queue = @output
+    return unless @boundary
+
+    @boundary_commits.each do |commit|
+      if not marked?(commit.oid, :shown) and mark(commit.oid, :boundary)
+        @queue.push(commit)
+      end
+    end
   end
 
   def still_interesting?
@@ -136,7 +147,12 @@ class RevList
       parents = simplify_commit(commit).map { |oid| load_commit(oid) }
     end
 
-    parents.each { |parent| enqueue_commit(parent) }
+    parents.each do |parent|
+      enqueue_commit(parent)
+      if marked?(commit.oid, :shown) and mark(parent.oid, :child_shown)
+        @boundary_commits.push(parent)
+      end
+    end
   end
 
   def mark_parents_uninteresting(commit)
@@ -191,7 +207,7 @@ class RevList
       commit = @queue.shift
       add_parents(commit) unless @limited
 
-      next if marked?(commit.oid, :uninteresting)
+      next if marked?(commit.oid, :uninteresting) and not marked?(commit.oid, :boundary)
       next if marked?(commit.oid, :treesame)
 
       @pending.push(@repo.database.tree_entry(commit.tree))

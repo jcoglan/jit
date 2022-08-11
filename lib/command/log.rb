@@ -12,6 +12,7 @@ module Command
       @parser.on("--all")      { @rev_list_opts[:all]      = true }
       @parser.on("--branches") { @rev_list_opts[:branches] = true }
       @parser.on("--remotes")  { @rev_list_opts[:remotes]  = true }
+      @parser.on("--boundary") { @rev_list_opts[:boundary] = true }
 
       @options[:decorate] = "auto"
       @options[:abbrev]   = :auto

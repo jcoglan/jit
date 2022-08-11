@@ -302,6 +302,24 @@ describe Command::Log do
       LOGS
     end
 
+    it "logs a branch with bounary commits" do
+      jit_cmd "log", "--pretty=oneline", "--boundary", "master..topic"
+
+      assert_stdout <<~LOGS
+        #{ @topic[0]  } topic-4
+        #{ @topic[1]  } topic-3
+        #{ @topic[2]  } topic-2
+        #{ @topic[3]  } topic-1
+        #{ @master[1] } master-2
+      LOGS
+
+      jit_cmd "log", "--pretty=oneline", "master", "^topic"
+
+      assert_stdout <<~LOGS
+        #{ @master[0] } master-3
+      LOGS
+    end
+
     it "excludes a long branch when commit times are equal" do
       jit_cmd "branch", "side", "topic^^"
       jit_cmd "checkout", "side"
