@@ -75,8 +75,9 @@ module Command
     end
 
     def send_have_list
-      options  = { :all => true, :missing => true }
-      rev_list = ::RevList.new(repo, [], options)
+      options  = { :all => true, :boundary => true, :missing => true }
+      exclude  = @remote_refs.values.map { |oid| "^#{ oid }" }
+      rev_list = ::RevList.new(repo, exclude, options)
 
       rev_list.each { |commit| @conn.send_packet("have #{ commit.oid }") }
       @conn.send_packet("done")
