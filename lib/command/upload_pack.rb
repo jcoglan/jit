@@ -27,25 +27,41 @@ module Command
 
     def recv_want_list
       STDERR.puts [:recv_want_list].inspect
-      @wanted = recv_oids("want", nil)
+
+      @wanted = Set.new
+      pattern = /^want ([0-9a-f]+)$/
+
+      @conn.recv_until(nil) do |line|
+        oid = pattern.match(line)[1]
+        @wanted.add(oid)
+      end
+
       exit 0 if @wanted.empty?
     end
 
     def recv_have_list
       STDERR.puts [:recv_have_list].inspect
-      @remote_has = recv_oids("have", "done")
-      @conn.send_packet("NAK")
+
+      @remote_has = Set.new
+      pattern     = /^have ([0-9a-f]+)$/
+
+      @conn.recv_until("done") do |line|
+        if line == nil
+          send_ack_message
+        else
+          oid = pattern.match(line)[1]
+          next unless repo.database.has?(oid)
+          send_ack_message(oid)
+          @remote_has.add(oid)
+        end
+      end
+
+      send_ack_message
     end
 
-    def recv_oids(prefix, terminator)
-      pattern = /^#{ prefix } ([0-9a-f]+)$/
-      result  = Set.new
-
-      @conn.recv_until(terminator) do |line|
-        STDERR.puts [:recv, [prefix, terminator], line].inspect
-        result.add(pattern.match(line)[1])
-      end
-      result
+    def send_ack_message(oid = nil)
+      message = oid ? "ACK #{ oid }" : "NAK"
+      @conn.send_packet(message) if @remote_has.empty?
     end
 
     def send_objects

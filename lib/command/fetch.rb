@@ -16,6 +16,7 @@ module Command
 
     CAPABILITIES = ["ofs-delta"]
     UPLOAD_PACK  = "git-upload-pack"
+    HAVE_BLOCK   = 32
 
     def define_options
       @parser.on("-f", "--force") { @options[:force] = true }
@@ -77,9 +78,20 @@ module Command
     def send_have_list
       options  = { :all => true, :missing => true }
       rev_list = ::RevList.new(repo, [], options)
+      has_ack  = false
 
-      rev_list.each { |commit| @conn.send_packet("have #{ commit.oid }") }
+      rev_list.each_slice(HAVE_BLOCK) do |slice|
+        slice.each { |commit| @conn.send_packet("have #{ commit.oid }") }
+        @conn.send_packet(nil)
+
+        if @conn.recv_packet =~ /^ACK [0-9a-f]+$/
+          has_ack = true
+          break
+        end
+      end
+
       @conn.send_packet("done")
+      @conn.recv_packet unless has_ack
 
       @conn.recv_until(Pack::SIGNATURE) {}
     end
