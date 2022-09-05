@@ -114,11 +114,11 @@ class Refs
     raise InvalidBranch, "branch '#{ branch_name }' not found." unless oid
 
     File.unlink(path)
-    delete_parent_directories(path)
 
     oid
   ensure
     lockfile.rollback
+    delete_parent_directories(path)
   end
 
   def current_ref(source = HEAD)

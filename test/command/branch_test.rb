@@ -163,6 +163,24 @@ describe Command::Branch do
       refute_includes branches.map(&:short_name), "bug-fix"
     end
 
+    it "deletes the empty parent directories of a branch" do
+      head = repo.refs.read_head
+
+      jit_cmd "branch", "fix/bug/1"
+      jit_cmd "branch", "fix/2"
+      jit_cmd "branch", "--delete", "fix/bug/1"
+
+      assert_stdout <<~MSG
+        Deleted branch fix/bug/1 (was #{ repo.database.short_oid(head) }).
+      MSG
+
+      branches = repo.refs.list_branches
+      refute_includes branches.map(&:short_name), "fix/bug/1"
+      assert_includes branches.map(&:short_name), "fix/2"
+
+      refute repo_path.join(".git", "refs", "heads", "fix", "bug").directory?
+    end
+
     it "fails to delete a non-existent branch" do
       jit_cmd "branch", "--delete", "no-such-branch"
 
