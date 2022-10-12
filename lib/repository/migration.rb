@@ -39,10 +39,10 @@ class Repository
       @errors  = []
 
       @conflicts = {
-        :stale_file            => SortedSet.new,
-        :stale_directory       => SortedSet.new,
-        :untracked_overwritten => SortedSet.new,
-        :untracked_removed     => SortedSet.new
+        :stale_file            => Set.new,
+        :stale_directory       => Set.new,
+        :untracked_overwritten => Set.new,
+        :untracked_removed     => Set.new
       }
     end
 
@@ -155,7 +155,7 @@ class Repository
       @conflicts.each do |type, paths|
         next if paths.empty?
 
-        lines = paths.map { |name| "\t#{ name }" }
+        lines = paths.sort.map { |name| "\t#{ name }" }
         header, footer = MESSAGES.fetch(type)
 
         @errors.push([header, *lines, footer].join("\n"))

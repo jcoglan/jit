@@ -99,7 +99,7 @@ class Index
 
   def each_entry
     if block_given?
-      @keys.each { |key| yield @entries[key] }
+      @keys.sort.each { |key| yield @entries[key] }
     else
       enum_for(:each_entry)
     end
@@ -139,7 +139,7 @@ class Index
 
   def clear
     @entries = {}
-    @keys    = SortedSet.new
+    @keys    = Set.new
     @parents = Hash.new { |hash, key| hash[key] = Set.new }
     @changed = false
   end

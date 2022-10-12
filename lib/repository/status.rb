@@ -20,11 +20,11 @@ class Repository
 
       @inspector = Inspector.new(@repo)
 
-      @changed           = SortedSet.new
+      @changed           = Set.new
       @index_changes     = SortedHash.new
       @conflicts         = SortedHash.new
       @workspace_changes = SortedHash.new
-      @untracked_files   = SortedSet.new
+      @untracked_files   = Set.new
 
       commit_oid ||= @repo.refs.read_head
       @head_tree   = @repo.database.load_tree_list(commit_oid)

@@ -71,7 +71,7 @@ module Command
       print_changes("Changes to be committed", @status.index_changes, :green)
       print_changes("Unmerged paths", @status.conflicts, :red, :conflict)
       print_changes("Changes not staged for commit", @status.workspace_changes, :red)
-      print_changes("Untracked files", @status.untracked_files, :red)
+      print_changes("Untracked files", @status.untracked_files.sort, :red)
 
       print_commit_status
     end
@@ -182,12 +182,12 @@ module Command
     end
 
     def print_porcelain_format
-      @status.changed.each do |path|
+      @status.changed.sort.each do |path|
         status = status_for(path)
         puts "#{ status } #{ path }"
       end
 
-      @status.untracked_files.each do |path|
+      @status.untracked_files.sort.each do |path|
         puts "?? #{ path }"
       end
     end
